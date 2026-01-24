@@ -1,0 +1,7 @@
+Running quick pure offense test...
+
+Battle 1: Winner = SmartBot, Turns = 11
+Battle 2: Winner = SmartBot, Turns = 12
+Battle 3: Winner = SmartBot, Turns = 13
+Battle 4: Winner = RandomBot, Turns = 18
+Battle 5: Winner = SmartBot, Turns = 20
