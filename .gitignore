@@ -25,6 +25,10 @@ Thumbs.db
 logs/
 *.log
 
+# Test results and temporary files
+battle-results.txt
+*-results.txt
+
 # Test coverage
 coverage/
 
