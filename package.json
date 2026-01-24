@@ -9,7 +9,8 @@
     "compare": "node examples/bot-comparison.js",
     "smart-test": "node examples/test-smart-bot.js",
     "ou-test": "node examples/ou-battle-test.js",
-    "pure-offense": "node examples/pure-offense-test.js"
+    "pure-offense": "node examples/pure-offense-test.js",
+    "minimax-test": "node examples/minimax-ou-test.js"
   },
   "repository": {
     "type": "git",
