@@ -1,0 +1,22 @@
+{
+  "name": "showdown",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "battle": "node examples/simple-battle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:23181/git/Teddy-Shih/showdown"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@pkmn/dex": "^0.10.5",
+    "@pkmn/randoms": "^0.10.5",
+    "@pkmn/sim": "^0.10.5"
+  }
+}
