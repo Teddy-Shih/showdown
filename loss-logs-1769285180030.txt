@@ -1,0 +1,685 @@
+DeepSearchBot Loss Analysis
+Total Battles: 10
+Losses: 4
+Win Rate: 60.0%
+
+================================================================================
+
+BATTLE 5 - LOSS
+Turns: 39
+Nodes evaluated: 56
+Prunes: 3
+
+Battle Log:
+============================================================
+BATTLE: DeepSearchBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+DeepSearchBot: default
+RandomBot: default
+
+--- Turn 1 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 2 ---
+DeepSearchBot: move 1
+RandomBot: move 1
+DeepSearchBot: default
+
+--- Turn 3 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 4 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 5 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 6 ---
+DeepSearchBot: move 2
+RandomBot: move 2
+
+--- Turn 7 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 8 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 9 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+DeepSearchBot: default
+
+--- Turn 10 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 11 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+DeepSearchBot: default
+
+--- Turn 12 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 13 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 14 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 15 ---
+DeepSearchBot: move 2
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 16 ---
+DeepSearchBot: move 2
+RandomBot: move 2
+DeepSearchBot: default
+
+--- Turn 17 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 18 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+
+--- Turn 19 ---
+DeepSearchBot: move 1
+RandomBot: move 1
+
+--- Turn 20 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 21 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+
+--- Turn 22 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+
+--- Turn 23 ---
+DeepSearchBot: move 1
+RandomBot: move 1
+
+--- Turn 24 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+
+--- Turn 25 ---
+DeepSearchBot: move 1
+RandomBot: move 3
+
+--- Turn 26 ---
+DeepSearchBot: move 1
+RandomBot: move 3
+
+--- Turn 27 ---
+DeepSearchBot: move 1
+RandomBot: move 3
+
+--- Turn 28 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+
+--- Turn 29 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+
+--- Turn 30 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+
+--- Turn 31 ---
+DeepSearchBot: move 1
+RandomBot: move 3
+DeepSearchBot: default
+
+--- Turn 32 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 33 ---
+DeepSearchBot: move 1
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 34 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+
+--- Turn 35 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 36 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+
+--- Turn 37 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+
+--- Turn 38 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+
+--- Turn 39 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 39
+
+================================================================================
+
+BATTLE 6 - LOSS
+Turns: 40
+Nodes evaluated: 169
+Prunes: 25
+
+Battle Log:
+============================================================
+BATTLE: RandomBot vs DeepSearchBot
+Format: Gen 9 OU
+============================================================
+RandomBot: default
+DeepSearchBot: default
+
+--- Turn 1 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 2 ---
+RandomBot: move 4
+DeepSearchBot: move 1
+
+--- Turn 3 ---
+RandomBot: move 3
+DeepSearchBot: move 1
+RandomBot: default
+
+--- Turn 4 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+DeepSearchBot: default
+
+--- Turn 5 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 6 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 7 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 8 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 9 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 10 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 11 ---
+RandomBot: move 3
+DeepSearchBot: move 2
+
+--- Turn 12 ---
+RandomBot: move 3
+DeepSearchBot: move 2
+
+--- Turn 13 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 14 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 15 ---
+RandomBot: move 3
+DeepSearchBot: move 1
+DeepSearchBot: default
+
+--- Turn 16 ---
+RandomBot: move 2
+DeepSearchBot: move 2
+
+--- Turn 17 ---
+RandomBot: move 2
+DeepSearchBot: move 1
+
+--- Turn 18 ---
+RandomBot: move 4
+DeepSearchBot: move 1
+RandomBot: default
+
+--- Turn 19 ---
+RandomBot: move 2
+DeepSearchBot: move 2
+DeepSearchBot: default
+
+--- Turn 20 ---
+RandomBot: move 3
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 21 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+DeepSearchBot: default
+
+--- Turn 22 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 23 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 24 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 25 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 26 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 27 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 28 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 29 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 30 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 31 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 32 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 33 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 34 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 35 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 36 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 37 ---
+RandomBot: switch 6
+DeepSearchBot: move 1
+
+--- Turn 38 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 39 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+DeepSearchBot: default
+
+--- Turn 40 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 40
+
+================================================================================
+
+BATTLE 9 - LOSS
+Turns: 33
+Nodes evaluated: 138
+Prunes: 29
+
+Battle Log:
+============================================================
+BATTLE: DeepSearchBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+DeepSearchBot: default
+RandomBot: default
+
+--- Turn 1 ---
+DeepSearchBot: move 2
+RandomBot: move 2
+
+--- Turn 2 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+DeepSearchBot: default
+
+--- Turn 3 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 4 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 5 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 6 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 7 ---
+DeepSearchBot: move 2
+RandomBot: move 2
+
+--- Turn 8 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 9 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 10 ---
+DeepSearchBot: move 2
+RandomBot: move 2
+
+--- Turn 11 ---
+DeepSearchBot: move 1
+RandomBot: move 1
+DeepSearchBot: default
+
+--- Turn 12 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 13 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 14 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 15 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 16 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+
+--- Turn 17 ---
+DeepSearchBot: move 1
+RandomBot: move 2
+DeepSearchBot: default
+
+--- Turn 18 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 19 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 20 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 21 ---
+DeepSearchBot: move 2
+RandomBot: move 2
+
+--- Turn 22 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 23 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 24 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 25 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+
+--- Turn 26 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 27 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+DeepSearchBot: default
+
+--- Turn 28 ---
+DeepSearchBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 29 ---
+DeepSearchBot: move 2
+RandomBot: move 3
+
+--- Turn 30 ---
+DeepSearchBot: move 1
+RandomBot: move 1
+
+--- Turn 31 ---
+DeepSearchBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 32 ---
+DeepSearchBot: move 2
+RandomBot: move 1
+DeepSearchBot: default
+
+--- Turn 33 ---
+DeepSearchBot: move 1
+RandomBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 33
+
+================================================================================
+
+BATTLE 10 - LOSS
+Turns: 23
+Nodes evaluated: 3
+Prunes: 0
+
+Battle Log:
+============================================================
+BATTLE: RandomBot vs DeepSearchBot
+Format: Gen 9 OU
+============================================================
+RandomBot: default
+DeepSearchBot: default
+
+--- Turn 1 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 2 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+--- Turn 3 ---
+RandomBot: move 2
+DeepSearchBot: move 1
+RandomBot: default
+
+--- Turn 4 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+DeepSearchBot: default
+
+--- Turn 5 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 6 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 7 ---
+RandomBot: move 2
+DeepSearchBot: move 2
+
+--- Turn 8 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 9 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 10 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+
+--- Turn 11 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 12 ---
+RandomBot: move 2
+DeepSearchBot: move 2
+DeepSearchBot: default
+
+--- Turn 13 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 14 ---
+RandomBot: move 2
+DeepSearchBot: move 2
+
+--- Turn 15 ---
+RandomBot: move 3
+DeepSearchBot: move 1
+
+--- Turn 16 ---
+RandomBot: move 3
+DeepSearchBot: move 1
+RandomBot: default
+
+--- Turn 17 ---
+RandomBot: move 2
+DeepSearchBot: move 2
+DeepSearchBot: default
+
+--- Turn 18 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 19 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+
+--- Turn 20 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+DeepSearchBot: default
+
+--- Turn 21 ---
+RandomBot: move 4
+DeepSearchBot: move 2
+RandomBot: default
+
+--- Turn 22 ---
+RandomBot: move 1
+DeepSearchBot: move 2
+DeepSearchBot: default
+
+--- Turn 23 ---
+RandomBot: move 1
+DeepSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 23
+
+================================================================================
+
