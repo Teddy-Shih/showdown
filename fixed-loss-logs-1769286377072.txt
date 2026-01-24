@@ -1,0 +1,231 @@
+FixedDeepSearchBot Loss Analysis
+Total Battles: 10
+Losses: 2
+Win Rate: 80.0%
+
+Bug Fixes Applied:
+- Corrected loop detection logic
+- Ensure opponent moves always available
+- Better alternative move selection
+
+================================================================================
+
+BATTLE 3 - LOSS
+Turns: 19
+Nodes: 3364
+Prunes: 450
+Move History: move 3, move 1, move 1, move 2, move 1, move 1
+
+Battle Log:
+============================================================
+BATTLE: FixedBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+FixedBot: default
+RandomBot: default
+
+--- Turn 1 ---
+FixedBot: move 1
+RandomBot: move 3
+
+--- Turn 2 ---
+FixedBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 3 ---
+FixedBot: move 2
+RandomBot: move 1
+FixedBot: default
+
+--- Turn 4 ---
+FixedBot: move 1
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 5 ---
+FixedBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 6 ---
+FixedBot: move 1
+RandomBot: move 2
+
+--- Turn 7 ---
+FixedBot: move 1
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 8 ---
+FixedBot: move 1
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 9 ---
+FixedBot: move 1
+RandomBot: move 1
+FixedBot: default
+
+--- Turn 10 ---
+FixedBot: move 2
+RandomBot: move 1
+
+--- Turn 11 ---
+FixedBot: move 1
+RandomBot: move 1
+
+--- Turn 12 ---
+FixedBot: move 1
+RandomBot: move 1
+FixedBot: default
+
+--- Turn 13 ---
+FixedBot: move 3
+RandomBot: move 1
+
+--- Turn 14 ---
+FixedBot: move 3
+RandomBot: move 4
+FixedBot: default
+
+--- Turn 15 ---
+FixedBot: move 1
+RandomBot: move 1
+
+--- Turn 16 ---
+FixedBot: move 1
+RandomBot: move 2
+
+--- Turn 17 ---
+FixedBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 18 ---
+FixedBot: move 1
+RandomBot: move 1
+FixedBot: default
+
+--- Turn 19 ---
+FixedBot: move 1
+RandomBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 19
+
+================================================================================
+
+BATTLE 4 - LOSS
+Turns: 19
+Nodes: 3364
+Prunes: 450
+Move History: move 3, move 1, move 1, move 2, move 1, move 1
+
+Battle Log:
+============================================================
+BATTLE: RandomBot vs FixedBot
+Format: Gen 9 OU
+============================================================
+RandomBot: default
+FixedBot: default
+
+--- Turn 1 ---
+RandomBot: move 3
+FixedBot: move 1
+
+--- Turn 2 ---
+RandomBot: move 2
+FixedBot: move 1
+RandomBot: default
+
+--- Turn 3 ---
+RandomBot: move 2
+FixedBot: move 2
+FixedBot: default
+
+--- Turn 4 ---
+RandomBot: move 4
+FixedBot: move 1
+RandomBot: default
+
+--- Turn 5 ---
+RandomBot: move 4
+FixedBot: move 1
+RandomBot: default
+
+--- Turn 6 ---
+RandomBot: move 4
+FixedBot: move 1
+RandomBot: default
+
+--- Turn 7 ---
+RandomBot: move 1
+FixedBot: move 1
+RandomBot: default
+
+--- Turn 8 ---
+RandomBot: move 2
+FixedBot: move 1
+RandomBot: default
+
+--- Turn 9 ---
+RandomBot: move 1
+FixedBot: move 1
+FixedBot: default
+
+--- Turn 10 ---
+RandomBot: move 1
+FixedBot: move 2
+
+--- Turn 11 ---
+RandomBot: move 1
+FixedBot: move 1
+
+--- Turn 12 ---
+RandomBot: move 1
+FixedBot: move 1
+FixedBot: default
+
+--- Turn 13 ---
+RandomBot: move 1
+FixedBot: move 3
+
+--- Turn 14 ---
+RandomBot: move 1
+FixedBot: move 3
+FixedBot: default
+
+--- Turn 15 ---
+RandomBot: move 1
+FixedBot: move 1
+
+--- Turn 16 ---
+RandomBot: move 4
+FixedBot: move 1
+
+--- Turn 17 ---
+RandomBot: move 3
+FixedBot: move 2
+RandomBot: default
+
+--- Turn 18 ---
+RandomBot: move 1
+FixedBot: move 1
+FixedBot: default
+
+--- Turn 19 ---
+RandomBot: move 1
+FixedBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 19
+
+================================================================================
+
