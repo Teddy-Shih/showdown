@@ -264,9 +264,84 @@ showdown/
 └── CLAUDE.md           # This file
 ```
 
+### Damage Calculation
+
+**IMPORTANT**: Do NOT implement damage calculation from scratch. Use the official damage calculator libraries.
+
+#### Recommended: @smogon/calc
+
+The `@smogon/calc` package provides accurate damage calculation that accounts for:
+- Type effectiveness
+- STAB (Same Type Attack Bonus)
+- Stats (Attack, Defense, Special Attack, Special Defense)
+- Abilities
+- Items
+- Field conditions (weather, terrain, screens)
+- Stat boosts/drops
+- All generation-specific mechanics
+
+**Installation**:
+```bash
+npm install @smogon/calc
+```
+
+**Usage Example**:
+```javascript
+const { calculate, Pokemon, Move, Generations } = require('@smogon/calc');
+
+const gen = Generations.get(9); // Gen 9
+
+// Create attacker
+const attacker = new Pokemon(gen, 'Charizard', {
+  item: 'Choice Specs',
+  nature: 'Timid',
+  evs: {spa: 252, spe: 252},
+  boosts: {spa: 1}
+});
+
+// Create defender
+const defender = new Pokemon(gen, 'Blastoise', {
+  item: 'Assault Vest',
+  nature: 'Modest',
+  evs: {hp: 252, spd: 252}
+});
+
+// Calculate damage
+const move = new Move(gen, 'Flamethrower');
+const result = calculate(gen, attacker, defender, move);
+
+// Get damage range
+const damageRolls = result.damage; // Array of possible damage values
+const avgDamage = damageRolls.reduce((a, b) => a + b, 0) / damageRolls.length;
+
+console.log(`Average damage: ${avgDamage}`);
+console.log(`Damage range: ${result.range()}`); // e.g., "85.2% - 100.5%"
+```
+
+**Alternative: @pkmn/dmg**
+
+For more advanced use cases or if you need lower-level control, consider `@pkmn/dmg`:
+```bash
+npm install @pkmn/dmg @pkmn/data @pkmn/dex
+```
+
+This package provides similar functionality but with a different API structure.
+
+**Key Principles**:
+- Always use damage calculators for move evaluation
+- Account for type effectiveness against opponent Pokemon
+- Consider stat boosts/drops in calculations
+- Handle special cases (weather, terrain, abilities)
+
 ### Coding Standards
 
-1. **Prefer Official APIs**: Use documented Pokemon Showdown APIs when available
+1. **API-First Approach**: **ALWAYS** check if Pokemon Showdown provides an official API or package for a feature before implementing it yourself. The ecosystem includes:
+   - `@pkmn/sim` - Battle simulation
+   - `@pkmn/dex` - Pokemon data
+   - `@smogon/calc` - Damage calculation
+   - `@pkmn/randoms` - Random team generation
+   - Check documentation and npm before writing custom implementations
+2. **Prefer Official APIs**: Use documented Pokemon Showdown APIs when available
 2. **Pin Versions**: If using undocumented APIs, pin exact package versions
 3. **Type Safety**: Use TypeScript or type hints for better reliability
 4. **Test Coverage**: Write tests for search algorithms and evaluation

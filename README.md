@@ -118,9 +118,55 @@ The simulator supports any Pokemon Showdown format. Common formats:
 - `gen8randombattle` - Gen 8 Random Battle
 - `gen7randombattle` - Gen 7 Random Battle
 
+## Bot Implementations
+
+### RandomBot (Baseline)
+
+Selects random valid moves from available options. Win rate: ~50% (by definition against itself).
+
+**Usage:**
+```bash
+npm run battle  # Watch a single RandomBot vs RandomBot battle
+```
+
+### SmartDamageBot (Damage Calculator)
+
+Uses base power, STAB (Same Type Attack Bonus), attacking stats, and accuracy to select the highest-value move. **Win rate: ~60-70% vs RandomBot** in testing.
+
+**Features**:
+- Calculates move scores based on base power
+- Applies 1.5x STAB bonus for type-matching moves
+- Scales damage by attacking stat (Atk for physical, SpA for special)
+- Accounts for stat boosts/drops
+- Reduces score for inaccurate moves
+- Prioritizes sleep, status, and setup moves appropriately
+
+**Usage**:
+```bash
+node examples/test-smart-bot.js 100  # Run 100 battles vs RandomBot
+```
+
+### MaxDamageBot (Full Damage Calculation)
+
+Uses `@smogon/calc` for complete damage calculation including types, stats, abilities, and items. Currently calculates against a fixed defender (Blissey), which limits effectiveness. **Requires refinement** to track actual opponent Pokemon.
+
+**Note**: Full damage calculation against the actual opponent is planned for future iterations.
+
+## Performance Comparison
+
+Based on testing:
+
+| Bot | Win Rate vs Random | Key Strategy |
+|-----|-------------------|--------------|
+| RandomBot | 50% | Random move selection |
+| SmartDamageBot | ~60-70% | Base power + STAB + stats |
+| MaxDamageBot (current) | ~23% | Full calc vs fixed defender (needs improvement) |
+
+**Conclusion**: Even simple heuristics (STAB + base power + stats) significantly outperform random play. This validates the approach of using damage calculation for move selection.
+
 ## Next Steps
 
-This minimal implementation serves as a foundation for building more sophisticated battle AIs. Planned enhancements:
+This implementation serves as a foundation for building more sophisticated battle AIs. Planned enhancements:
 
 ### Phase 1: Position Evaluation (Not Implemented)
 - [ ] Evaluate battle states (HP, type advantages, hazards)

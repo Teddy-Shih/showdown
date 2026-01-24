@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "battle": "node examples/simple-battle.js"
+    "battle": "node examples/simple-battle.js",
+    "compare": "node examples/bot-comparison.js",
+    "smart-test": "node examples/test-smart-bot.js"
   },
   "repository": {
     "type": "git",
@@ -17,6 +19,7 @@
   "dependencies": {
     "@pkmn/dex": "^0.10.5",
     "@pkmn/randoms": "^0.10.5",
-    "@pkmn/sim": "^0.10.5"
+    "@pkmn/sim": "^0.10.5",
+    "@smogon/calc": "^0.10.0"
   }
 }
