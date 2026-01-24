@@ -1,0 +1,863 @@
+ImprovedDeepSearchBot Loss Analysis
+Total Battles: 10
+Losses: 5
+Win Rate: 50.0%
+
+Fixes Applied:
+- Opponent tracking from turn 1
+- Loop detection (no move spam)
+- Guaranteed search execution
+- Progress-aware evaluation
+
+================================================================================
+
+BATTLE 1 - LOSS
+Turns: 41
+Nodes: 3364
+Prunes: 450
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+RandomBot: default
+
+--- Turn 1 ---
+ImprovedBot: move 1
+RandomBot: move 3
+
+--- Turn 2 ---
+ImprovedBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 3 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 4 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 5 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 6 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 7 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 8 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 9 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 10 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 11 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 12 ---
+ImprovedBot: move 1
+RandomBot: move 4
+RandomBot: default
+ImprovedBot: default
+
+--- Turn 13 ---
+ImprovedBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 14 ---
+ImprovedBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 15 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 16 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 17 ---
+ImprovedBot: move 2
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 18 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 19 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 20 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 21 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 22 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 23 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 24 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 25 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 26 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 27 ---
+ImprovedBot: move 2
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 28 ---
+ImprovedBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 29 ---
+ImprovedBot: move 1
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 30 ---
+ImprovedBot: move 1
+RandomBot: move 3
+
+--- Turn 31 ---
+ImprovedBot: move 1
+RandomBot: move 3
+
+--- Turn 32 ---
+ImprovedBot: move 1
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 33 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 34 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 35 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 36 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 37 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 38 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 39 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 40 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 41 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 41
+
+================================================================================
+
+BATTLE 3 - LOSS
+Turns: 42
+Nodes: 3364
+Prunes: 450
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+RandomBot: default
+
+--- Turn 1 ---
+ImprovedBot: move 1
+RandomBot: move 4
+
+--- Turn 2 ---
+ImprovedBot: move 1
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 3 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 4 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 5 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 6 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 7 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 8 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 9 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 10 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 11 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 12 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 13 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 14 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 15 ---
+ImprovedBot: move 1
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 16 ---
+ImprovedBot: move 1
+RandomBot: move 3
+
+--- Turn 17 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 18 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 19 ---
+ImprovedBot: move 2
+RandomBot: move 4
+
+--- Turn 20 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 21 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 22 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 23 ---
+ImprovedBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 24 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 25 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 26 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 27 ---
+ImprovedBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 28 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 29 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 30 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 31 ---
+ImprovedBot: move 1
+RandomBot: move 4
+
+--- Turn 32 ---
+ImprovedBot: move 1
+RandomBot: move 4
+ImprovedBot: default
+
+--- Turn 33 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 34 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 35 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 36 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 37 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 38 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 39 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 40 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 41 ---
+ImprovedBot: move 3
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 42 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 42
+
+================================================================================
+
+BATTLE 5 - LOSS
+Turns: 29
+Nodes: 3364
+Prunes: 450
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+RandomBot: default
+
+--- Turn 1 ---
+ImprovedBot: move 1
+RandomBot: move 2
+
+--- Turn 2 ---
+ImprovedBot: move 1
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 3 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 4 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 5 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 6 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 7 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 8 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 9 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 10 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 11 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 12 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 13 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 14 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 15 ---
+ImprovedBot: move 1
+RandomBot: move 1
+
+--- Turn 16 ---
+ImprovedBot: move 1
+RandomBot: move 3
+
+--- Turn 17 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 18 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 19 ---
+ImprovedBot: move 2
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 20 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 21 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 22 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 23 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 24 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 25 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 26 ---
+ImprovedBot: move 2
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 27 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 28 ---
+ImprovedBot: move 1
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 29 ---
+ImprovedBot: move 1
+RandomBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 29
+
+================================================================================
+
+BATTLE 7 - LOSS
+Turns: 29
+Nodes: 3364
+Prunes: 450
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+RandomBot: default
+
+--- Turn 1 ---
+ImprovedBot: move 1
+RandomBot: move 4
+
+--- Turn 2 ---
+ImprovedBot: move 1
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 3 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 4 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 5 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 6 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 7 ---
+ImprovedBot: move 2
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 8 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 9 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 10 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 11 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 12 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 13 ---
+ImprovedBot: move 1
+RandomBot: move 3
+ImprovedBot: default
+
+--- Turn 14 ---
+ImprovedBot: move 1
+RandomBot: move 1
+
+--- Turn 15 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 16 ---
+ImprovedBot: move 2
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 17 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 18 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 19 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 20 ---
+ImprovedBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 21 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 22 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 23 ---
+ImprovedBot: move 2
+RandomBot: move 4
+ImprovedBot: default
+
+--- Turn 24 ---
+ImprovedBot: move 1
+RandomBot: move 4
+
+--- Turn 25 ---
+ImprovedBot: move 1
+RandomBot: move 4
+
+--- Turn 26 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 27 ---
+ImprovedBot: move 2
+RandomBot: move 4
+RandomBot: default
+
+--- Turn 28 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 29 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 29
+
+================================================================================
+
+BATTLE 9 - LOSS
+Turns: 27
+Nodes: 3364
+Prunes: 450
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs RandomBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+RandomBot: default
+
+--- Turn 1 ---
+ImprovedBot: move 1
+RandomBot: move 1
+
+--- Turn 2 ---
+ImprovedBot: move 1
+RandomBot: move 1
+
+--- Turn 3 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 4 ---
+ImprovedBot: move 2
+RandomBot: move 4
+
+--- Turn 5 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 6 ---
+ImprovedBot: move 2
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 7 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 8 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 9 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 10 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 11 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 12 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 13 ---
+ImprovedBot: move 1
+RandomBot: move 2
+RandomBot: default
+
+--- Turn 14 ---
+ImprovedBot: move 1
+RandomBot: move 3
+
+--- Turn 15 ---
+ImprovedBot: move 2
+RandomBot: move 3
+
+--- Turn 16 ---
+ImprovedBot: move 2
+RandomBot: move 2
+
+--- Turn 17 ---
+ImprovedBot: move 2
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 18 ---
+ImprovedBot: move 2
+RandomBot: move 2
+ImprovedBot: default
+
+--- Turn 19 ---
+ImprovedBot: move 2
+RandomBot: move 3
+RandomBot: default
+
+--- Turn 20 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 21 ---
+ImprovedBot: move 1
+RandomBot: move 1
+
+--- Turn 22 ---
+ImprovedBot: move 1
+RandomBot: move 1
+
+--- Turn 23 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 24 ---
+ImprovedBot: move 2
+RandomBot: move 1
+RandomBot: default
+
+--- Turn 25 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+--- Turn 26 ---
+ImprovedBot: move 2
+RandomBot: move 1
+ImprovedBot: default
+
+--- Turn 27 ---
+ImprovedBot: move 2
+RandomBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: RandomBot
+Total turns: 27
+
+================================================================================
+
