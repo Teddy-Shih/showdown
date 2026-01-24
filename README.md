@@ -154,7 +154,7 @@ Uses `@smogon/calc` for complete damage calculation including types, stats, abil
 
 ## Performance Comparison
 
-Based on testing:
+### Random Battle Format (Gen 9 Random Battle)
 
 | Bot | Win Rate vs Random | Key Strategy |
 |-----|-------------------|--------------|
@@ -162,7 +162,37 @@ Based on testing:
 | SmartDamageBot | ~60-70% | Base power + STAB + stats |
 | MaxDamageBot (current) | ~23% | Full calc vs fixed defender (needs improvement) |
 
-**Conclusion**: Even simple heuristics (STAB + base power + stats) significantly outperform random play. This validates the approach of using damage calculation for move selection.
+**Conclusion**: Even simple heuristics (STAB + base power + stats) significantly outperform random play with random teams.
+
+### Competitive Format (Gen 9 OU with Smogon Sample Teams)
+
+**1,000 Battle Test Results** (see [OU-RESULTS.md](./OU-RESULTS.md) for full analysis)
+
+| Bot | Win Rate | Notes |
+|-----|----------|-------|
+| RandomBot | **54%** | Surprisingly competitive with well-built teams |
+| SmartDamageBot | 46% | Simple damage calc insufficient for OU |
+
+**Key Finding**: SmartDamageBot **performs worse** in competitive OU than in random battles!
+
+**Why?**
+- OU teams have complex synergies, roles, and strategies
+- Damage calculation alone misses: setup timing, hazard management, pivoting, defensive play
+- Well-built teams make even random play viable (54% win rate)
+- Strategic depth matters more than raw damage in competitive play
+
+**Implication**: To exceed random play in OU, we need minimax search with strategic evaluation, not just damage calculation.
+
+**Test Details**:
+```bash
+npm run ou-test 1000  # Run 1000 OU battles
+```
+
+Teams used:
+- Choice Specs Gholdengo (Smogon TOTW)
+- Anti-Meta Landorus-T (Smogon Forums)
+
+Average battle length: 32.6 turns (range: 11-112)
 
 ## Next Steps
 

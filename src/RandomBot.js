@@ -12,6 +12,11 @@ class RandomBot {
    * @returns {string} - The choice string (e.g., "move 1", "switch 2")
    */
   chooseMove(request) {
+    // Safety check
+    if (!request || !request.active || !request.side) {
+      return 'default';
+    }
+
     // If we need to switch (force switch scenario)
     if (request.forceSwitch) {
       const switches = this.getAvailableSwitches(request);

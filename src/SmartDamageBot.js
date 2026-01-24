@@ -10,6 +10,11 @@ class SmartDamageBot {
   }
 
   chooseMove(request) {
+    // Safety check
+    if (!request || !request.active || !request.side) {
+      return 'default';
+    }
+
     // Handle force switch
     if (request.forceSwitch) {
       const switches = this.getAvailableSwitches(request);

@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "battle": "node examples/simple-battle.js",
     "compare": "node examples/bot-comparison.js",
-    "smart-test": "node examples/test-smart-bot.js"
+    "smart-test": "node examples/test-smart-bot.js",
+    "ou-test": "node examples/ou-battle-test.js"
   },
   "repository": {
     "type": "git",
