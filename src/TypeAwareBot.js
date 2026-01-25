@@ -31,6 +31,9 @@ class TypeAwareBot {
 
     // Switch tracking
     this.switchBreaks = 0;
+
+    // NEW: Team composition analysis
+    this.teamStyle = null; // 'offensive' or 'defensive', cached after first analysis
   }
 
   processBattleMessage(message) {
@@ -368,6 +371,7 @@ class TypeAwareBot {
     }
 
     const orderedMoves = this.orderMoves(ourMoveList, ourPokemon, this.opponentActive, oppHP);
+    const team = request.side ? request.side.pokemon : null; // Get team for evaluation
 
     for (let i = 0; i < availableMoves.length; i++) {
       const move = availableMoves[i];
@@ -380,7 +384,7 @@ class TypeAwareBot {
         this.opponentActive, oppHP,
         orderedMoves, oppMoveList,
         moveData, null,
-        1, alpha, beta, false
+        1, alpha, beta, false, team
       );
 
       if (score > bestScore) {
@@ -525,15 +529,15 @@ class TypeAwareBot {
     return moveScores.map(ms => ms.move);
   }
 
-  minimaxDepth(ourPokemon, ourHP, oppPokemon, oppHP, ourMoves, oppMoves, ourLastMove, oppLastMove, depth, alpha, beta, maximizing) {
+  minimaxDepth(ourPokemon, ourHP, oppPokemon, oppHP, ourMoves, oppMoves, ourLastMove, oppLastMove, depth, alpha, beta, maximizing, team = null) {
     this.nodesEvaluated++;
 
     if (depth >= this.searchDepth) {
-      return this.evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP);
+      return this.evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP, team);
     }
 
     if (ourHP <= 0 || oppHP <= 0) {
-      return this.evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP);
+      return this.evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP, team);
     }
 
     if (maximizing) {
@@ -557,7 +561,7 @@ class TypeAwareBot {
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
-            depth + 1, alpha, beta, false
+            depth + 1, alpha, beta, false, team
           );
 
           maxScore = Math.max(maxScore, score);
@@ -592,7 +596,7 @@ class TypeAwareBot {
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
-            depth + 1, alpha, beta, true
+            depth + 1, alpha, beta, true, team
           );
 
           minScore = Math.min(minScore, score);
@@ -638,38 +642,99 @@ class TypeAwareBot {
   }
 
   /**
-   * NEW: Enhanced evaluation with type effectiveness
+   * NEW: Analyze team composition to determine playstyle
+   * Offensive teams have higher offensive stats, defensive teams have higher defensive stats
    */
-  evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP) {
+  analyzeTeamStyle(team) {
+    if (this.teamStyle) {
+      return this.teamStyle; // Cache result
+    }
+
+    let totalOffensive = 0;
+    let totalDefensive = 0;
+    let count = 0;
+
+    for (const pokemon of team) {
+      const speciesName = pokemon.ident.split(':')[1].trim().split(',')[0];
+      const species = this.dex.species.get(speciesName);
+
+      if (!species) continue;
+
+      const offensive = species.baseStats.atk + species.baseStats.spa;
+      const defensive = species.baseStats.def + species.baseStats.spd;
+
+      totalOffensive += offensive;
+      totalDefensive += defensive;
+      count++;
+    }
+
+    if (count === 0) {
+      this.teamStyle = 'balanced';
+      return this.teamStyle;
+    }
+
+    const avgOffensive = totalOffensive / count;
+    const avgDefensive = totalDefensive / count;
+
+    // If offensive stats are 10% higher than defensive, consider offensive
+    if (avgOffensive > avgDefensive * 1.1) {
+      this.teamStyle = 'offensive';
+    } else if (avgDefensive > avgOffensive * 1.1) {
+      this.teamStyle = 'defensive';
+    } else {
+      this.teamStyle = 'balanced';
+    }
+
+    return this.teamStyle;
+  }
+
+  /**
+   * NEW: Enhanced evaluation with type effectiveness AND team-aware weights
+   */
+  evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP, team = null) {
     let score = 0;
 
     // Terminal states (high priority)
     if (oppHP <= 0) score += 1000;
     if (ourHP <= 0) score -= 1000;
 
-    // HP difference (base score)
-    score += ourHP - oppHP;
-
-    // NEW: Type matchup scoring (BALANCED weight)
+    // NEW: Type matchup scoring
     const ourSpecies = this.dex.species.get(
       ourPokemon.species || ourPokemon.ident.split(':')[1].trim().split(',')[0]
     );
     const oppSpecies = this.dex.species.get(oppPokemon.species);
 
     const typeMatchup = this.calculateTypeMatchupScore(ourSpecies.types, oppSpecies.types);
-    // FIXED: Reduced from 150 to 30 to balance with HP
-    // Type advantage should matter but not dominate
-    score += typeMatchup * 30;
 
-    // NEW: HP preservation bonus (exponential)
+    // NEW: HP ratios for scaling
     const ourHPRatio = Math.max(0, ourHP) / 100;
     const oppHPRatio = Math.max(0, oppHP) / 100;
 
-    score += (ourHPRatio ** 2) * 80;  // Exponential: 100%→80, 50%→20, 25%→5
-    score -= (oppHPRatio ** 2) * 80;
+    // NEW: Team-aware evaluation weights
+    const teamStyle = team ? this.analyzeTeamStyle(team) : 'balanced';
 
-    // Progress bonus (reward reducing opponent HP)
-    score += (1 - oppHPRatio) * 50;
+    if (teamStyle === 'offensive') {
+      // OFFENSIVE TEAMS: Prioritize damage and type advantage over HP preservation
+      score += (ourHP - oppHP) * 1.5;     // Increased damage weight
+      score += typeMatchup * 40;          // Increased type advantage weight
+      score += (ourHPRatio ** 2) * 40;    // DECREASED HP preservation (was 80)
+      score -= (oppHPRatio ** 2) * 80;    // Keep opponent HP penalty same
+      score += (1 - oppHPRatio) * 70;     // Increased progress bonus
+    } else if (teamStyle === 'defensive') {
+      // DEFENSIVE TEAMS: Keep conservative calibration (proven 80% win rate)
+      score += (ourHP - oppHP);
+      score += typeMatchup * 30;
+      score += (ourHPRatio ** 2) * 80;
+      score -= (oppHPRatio ** 2) * 80;
+      score += (1 - oppHPRatio) * 50;
+    } else {
+      // BALANCED TEAMS: Middle ground
+      score += (ourHP - oppHP) * 1.25;
+      score += typeMatchup * 35;
+      score += (ourHPRatio ** 2) * 60;
+      score -= (oppHPRatio ** 2) * 80;
+      score += (1 - oppHPRatio) * 60;
+    }
 
     return score;
   }
