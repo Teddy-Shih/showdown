@@ -1,0 +1,680 @@
+ImprovedTypeAwareBot vs StatefulTreeSearchBot - Loss Analysis
+Total Battles: 10
+ImprovedBot Losses: 5
+Win Rate: 50.0%
+
+Improvements Applied:
+- More aggressive switch threshold (-3 → -2)
+- Earlier HP-based switching (30 HP → 50 HP)
+- Increased HP preservation bonus (80 → 120)
+- Move diversity penalty
+- Team HP total consideration
+- "Being walled" detection
+
+================================================================================
+
+BATTLE 3 - LOSS
+Turns: 26
+Nodes: 68
+Prunes: 0
+Switches: 3
+Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs TreeSearchBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+TreeSearchBot: default
+
+--- Turn 1 ---
+ImprovedBot: switch 2
+TreeSearchBot: move 2
+
+--- Turn 2 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 3 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 4 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 5 ---
+ImprovedBot: switch 3
+TreeSearchBot: move 2
+
+--- Turn 6 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 7 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 8 ---
+ImprovedBot: switch 6
+TreeSearchBot: move 2
+
+--- Turn 9 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 10 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 11 ---
+ImprovedBot: move 2
+TreeSearchBot: move 3
+
+--- Turn 12 ---
+ImprovedBot: move 1
+TreeSearchBot: move 3
+ImprovedBot: default
+
+--- Turn 13 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 14 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 15 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 16 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 17 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 18 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 19 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 20 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 21 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 22 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 23 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+TreeSearchBot: default
+
+--- Turn 24 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 25 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 26 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 26
+
+================================================================================
+
+BATTLE 5 - LOSS
+Turns: 28
+Nodes: 1068
+Prunes: 148
+Switches: 3
+Move History: move 2, move 1, move 1, move 3, move 1, move 1
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs TreeSearchBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+TreeSearchBot: default
+
+--- Turn 1 ---
+ImprovedBot: switch 2
+TreeSearchBot: move 2
+
+--- Turn 2 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 3 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 4 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 5 ---
+ImprovedBot: switch 3
+TreeSearchBot: move 2
+
+--- Turn 6 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 7 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 8 ---
+ImprovedBot: switch 6
+TreeSearchBot: move 2
+
+--- Turn 9 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 10 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 11 ---
+ImprovedBot: move 2
+TreeSearchBot: move 3
+
+--- Turn 12 ---
+ImprovedBot: move 1
+TreeSearchBot: move 3
+ImprovedBot: default
+
+--- Turn 13 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 14 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 15 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 16 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 17 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 18 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 19 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 20 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 21 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 22 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 23 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+TreeSearchBot: default
+
+--- Turn 24 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 25 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 26 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 27 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 28 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 28
+
+================================================================================
+
+BATTLE 7 - LOSS
+Turns: 32
+Nodes: 68
+Prunes: 0
+Switches: 3
+Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs TreeSearchBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+TreeSearchBot: default
+
+--- Turn 1 ---
+ImprovedBot: switch 2
+TreeSearchBot: move 2
+
+--- Turn 2 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 3 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 4 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 5 ---
+ImprovedBot: switch 3
+TreeSearchBot: move 2
+
+--- Turn 6 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 7 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 8 ---
+ImprovedBot: switch 6
+TreeSearchBot: move 2
+
+--- Turn 9 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 10 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 11 ---
+ImprovedBot: move 2
+TreeSearchBot: move 3
+
+--- Turn 12 ---
+ImprovedBot: move 1
+TreeSearchBot: move 3
+ImprovedBot: default
+
+--- Turn 13 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 14 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 15 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 16 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 17 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 18 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 19 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 20 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 21 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 22 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 23 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+
+--- Turn 24 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 25 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 26 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 27 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 28 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 29 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+TreeSearchBot: default
+
+--- Turn 30 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 31 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 32 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 32
+
+================================================================================
+
+BATTLE 9 - LOSS
+Turns: 20
+Nodes: 84
+Prunes: 16
+Switches: 4
+Move History: move 1, move 2, move 1, move 1, move 3, move 1
+
+Battle Log:
+============================================================
+BATTLE: ImprovedBot vs TreeSearchBot
+Format: Gen 9 OU
+============================================================
+ImprovedBot: default
+TreeSearchBot: default
+
+--- Turn 1 ---
+ImprovedBot: switch 2
+TreeSearchBot: move 2
+
+--- Turn 2 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 3 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 4 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 5 ---
+ImprovedBot: switch 3
+TreeSearchBot: move 2
+
+--- Turn 6 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 7 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+ImprovedBot: default
+
+--- Turn 8 ---
+ImprovedBot: move 2
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 9 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 10 ---
+ImprovedBot: move 1
+TreeSearchBot: move 3
+
+--- Turn 11 ---
+ImprovedBot: switch 4
+TreeSearchBot: move 3
+
+--- Turn 12 ---
+ImprovedBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 13 ---
+ImprovedBot: switch 4
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 14 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 15 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+ImprovedBot: default
+
+--- Turn 16 ---
+ImprovedBot: move 2
+TreeSearchBot: move 1
+TreeSearchBot: default
+
+--- Turn 17 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 18 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 19 ---
+ImprovedBot: move 3
+TreeSearchBot: move 1
+ImprovedBot: default
+ImprovedBot: default
+
+--- Turn 20 ---
+ImprovedBot: move 1
+TreeSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 20
+
+================================================================================
+
+BATTLE 10 - LOSS
+Turns: 19
+Nodes: 2664
+Prunes: 276
+Switches: 2
+Move History: move 2, move 1, move 1, move 3, move 1, move 1
+
+Battle Log:
+============================================================
+BATTLE: TreeSearchBot vs ImprovedBot
+Format: Gen 9 OU
+============================================================
+TreeSearchBot: default
+ImprovedBot: default
+
+--- Turn 1 ---
+TreeSearchBot: move 2
+ImprovedBot: move 1
+
+--- Turn 2 ---
+TreeSearchBot: move 2
+ImprovedBot: move 1
+TreeSearchBot: default
+
+--- Turn 3 ---
+TreeSearchBot: move 2
+ImprovedBot: switch 3
+
+--- Turn 4 ---
+TreeSearchBot: move 2
+ImprovedBot: move 1
+TreeSearchBot: default
+
+--- Turn 5 ---
+TreeSearchBot: move 2
+ImprovedBot: switch 6
+
+--- Turn 6 ---
+TreeSearchBot: move 2
+ImprovedBot: move 1
+TreeSearchBot: default
+
+--- Turn 7 ---
+TreeSearchBot: move 2
+ImprovedBot: move 1
+
+--- Turn 8 ---
+TreeSearchBot: move 3
+ImprovedBot: move 2
+ImprovedBot: default
+
+--- Turn 9 ---
+TreeSearchBot: move 2
+ImprovedBot: move 1
+TreeSearchBot: default
+
+--- Turn 10 ---
+TreeSearchBot: move 1
+ImprovedBot: move 1
+ImprovedBot: default
+
+--- Turn 11 ---
+TreeSearchBot: move 1
+ImprovedBot: move 3
+ImprovedBot: default
+
+--- Turn 12 ---
+TreeSearchBot: move 1
+ImprovedBot: move 1
+ImprovedBot: default
+
+--- Turn 13 ---
+TreeSearchBot: move 1
+ImprovedBot: move 1
+
+--- Turn 14 ---
+TreeSearchBot: move 1
+ImprovedBot: move 2
+TreeSearchBot: default
+
+--- Turn 15 ---
+TreeSearchBot: move 1
+ImprovedBot: move 1
+
+--- Turn 16 ---
+TreeSearchBot: move 1
+ImprovedBot: move 1
+ImprovedBot: default
+
+--- Turn 17 ---
+TreeSearchBot: move 1
+ImprovedBot: move 3
+
+--- Turn 18 ---
+TreeSearchBot: move 1
+ImprovedBot: move 1
+
+--- Turn 19 ---
+TreeSearchBot: move 1
+ImprovedBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 19
+
+================================================================================
