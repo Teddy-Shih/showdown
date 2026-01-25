@@ -210,42 +210,39 @@ class TypeAwareBot {
       estimatedMoves.forEach(m => this.opponentActive.moves.add(m));
     }
 
-    // NEW: Check if we should switch BEFORE searching for best move
-    const shouldSwitch = this.shouldProactivelySwitch(request, ourPokemon, ourHP);
-    if (shouldSwitch) {
-      const bestSwitchSlot = this.findBestSwitch(request, ourPokemon);
-      if (bestSwitchSlot) {
-        this.switchBreaks++;
-        const switchChoice = `switch ${bestSwitchSlot}`;
+    // NEW: Search considers both moves AND switches
+    const bestChoice = this.searchBestMove(request, active.moves, ourPokemon, ourHP, oppHP);
 
-        // Check for switch spam
-        if (this.isAboutToLoop(switchChoice)) {
-          // Switch spam detected, don't switch
-        } else {
-          this.moveHistory.push(switchChoice);
-          if (this.moveHistory.length > this.maxHistorySize) {
-            this.moveHistory.shift();
-          }
-          return switchChoice;
-        }
-      }
+    // Handle switch vs move decision
+    let proposedChoice;
+    if (bestChoice.isSwitch) {
+      proposedChoice = `switch ${bestChoice.slot}`;
+      this.switchBreaks++;
+    } else {
+      proposedChoice = `move ${bestChoice.slot}`;
     }
 
-    // Search for best attacking move
-    const bestMove = this.searchBestMove(request, active.moves, ourPokemon, ourHP, oppHP);
-
-    // Loop detection for moves
-    const proposedChoice = `move ${bestMove.slot}`;
-
+    // Loop detection
     if (this.isAboutToLoop(proposedChoice)) {
-      const alternativeSlot = this.findAlternativeMove(active.moves, bestMove.slot);
-      if (alternativeSlot) {
-        const finalChoice = `move ${alternativeSlot}`;
-        this.moveHistory.push(finalChoice);
+      // If loop detected and it was a switch, try a move instead
+      if (bestChoice.isSwitch) {
+        const fallbackMove = `move 1`;
+        this.moveHistory.push(fallbackMove);
         if (this.moveHistory.length > this.maxHistorySize) {
           this.moveHistory.shift();
         }
-        return finalChoice;
+        return fallbackMove;
+      } else {
+        // If loop detected with move, try alternative move
+        const alternativeSlot = this.findAlternativeMove(active.moves, bestChoice.slot);
+        if (alternativeSlot) {
+          const finalChoice = `move ${alternativeSlot}`;
+          this.moveHistory.push(finalChoice);
+          if (this.moveHistory.length > this.maxHistorySize) {
+            this.moveHistory.shift();
+          }
+          return finalChoice;
+        }
       }
     }
 
@@ -371,8 +368,10 @@ class TypeAwareBot {
     }
 
     const orderedMoves = this.orderMoves(ourMoveList, ourPokemon, this.opponentActive, oppHP);
-    const team = request.side ? request.side.pokemon : null; // Get team for evaluation
+    const team = request.side ? request.side.pokemon : null;
+    const availableSwitches = this.getAvailableSwitches(request);
 
+    // NEW: Consider attack moves
     for (let i = 0; i < availableMoves.length; i++) {
       const move = availableMoves[i];
       if (move.disabled || move.pp === 0) continue;
@@ -384,12 +383,12 @@ class TypeAwareBot {
         this.opponentActive, oppHP,
         orderedMoves, oppMoveList,
         moveData, null,
-        1, alpha, beta, false, team
+        1, alpha, beta, false, team, availableSwitches, request
       );
 
       if (score > bestScore) {
         bestScore = score;
-        bestMove = { slot: i + 1, move: move.move, score };
+        bestMove = { slot: i + 1, move: move.move, score, isSwitch: false };
       }
 
       alpha = Math.max(alpha, score);
@@ -400,11 +399,85 @@ class TypeAwareBot {
       }
     }
 
+    // NEW: Consider switch options in search tree (only when strategically beneficial)
+    // Check if we're at a type disadvantage - only consider switches then
+    const ourSpeciesName = ourPokemon.ident.split(':')[1].trim().split(',')[0];
+    const ourSpecies = this.dex.species.get(ourSpeciesName);
+    const currentMatchup = this.calculateTypeMatchupScore(ourSpecies.types, this.opponentActive.types);
+
+    // Only consider switches if we're at a significant type disadvantage (matchup < -2)
+    // OR if our HP is low (< 40)
+    if (currentMatchup < -2 || ourHP < 40) {
+      for (const switchSlot of availableSwitches) {
+        const switchTarget = request.side.pokemon[switchSlot - 1];
+        const switchHP = this.parseHP(switchTarget.condition).current;
+
+        if (switchHP <= 0) continue;
+
+        // Quick evaluation: only consider if switch-in has better type matchup
+        const switchSpeciesName = switchTarget.ident.split(':')[1].trim().split(',')[0];
+        const switchSpecies = this.dex.species.get(switchSpeciesName);
+        const switchMatchup = this.calculateTypeMatchupScore(switchSpecies.types, this.opponentActive.types);
+
+        // Only evaluate this switch if it improves matchup by at least 2 points
+        if (switchMatchup > currentMatchup + 2) {
+          const score = this.evaluateSwitchInSearch(
+            switchTarget, switchHP,
+            this.opponentActive, oppHP,
+            oppMoveList, team, availableSwitches, request
+          );
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestMove = { slot: switchSlot, move: `switch to ${switchSpeciesName}`, score, isSwitch: true };
+          }
+
+          alpha = Math.max(alpha, score);
+
+          if (beta <= alpha) {
+            this.pruneCount++;
+            break;
+          }
+        }
+      }
+    }
+
     if (!bestMove) {
-      return { slot: 1, move: availableMoves[0].move, score: 0 };
+      return { slot: 1, move: availableMoves[0].move, score: 0, isSwitch: false };
     }
 
     return bestMove;
+  }
+
+  /**
+   * NEW: Evaluate switching to a specific Pokemon within search
+   * Opponent gets a free hit since switching takes a turn
+   * Optimized: assumes worst-case (highest damage) opponent move
+   */
+  evaluateSwitchInSearch(switchTarget, switchHP, oppPokemon, oppHP, oppMoves, team, availableSwitches, request) {
+    this.nodesEvaluated++;
+
+    const switchSpeciesName = switchTarget.ident.split(':')[1].trim().split(',')[0];
+    const switchSpecies = this.dex.species.get(switchSpeciesName);
+
+    // Find worst-case damage (assume opponent chooses best move)
+    let maxDamage = 0;
+    for (const oppMoveName of oppMoves) {
+      const oppMoveData = this.dex.moves.get(oppMoveName);
+      const damage = this.calculateDamageWithTypes(
+        oppPokemon, oppMoveData,
+        { species: switchSpeciesName, types: switchSpecies.types, stats: this.estimateStats(switchSpeciesName, 100) }
+      );
+      maxDamage = Math.max(maxDamage, damage);
+    }
+
+    const newSwitchHP = Math.max(0, switchHP - maxDamage);
+
+    // After switch, evaluate the new position
+    const score = this.evaluatePosition(switchTarget, newSwitchHP, oppPokemon, oppHP, team);
+
+    // Apply switch penalty (giving opponent free turn)
+    return score - 100;
   }
 
   /**
@@ -529,7 +602,7 @@ class TypeAwareBot {
     return moveScores.map(ms => ms.move);
   }
 
-  minimaxDepth(ourPokemon, ourHP, oppPokemon, oppHP, ourMoves, oppMoves, ourLastMove, oppLastMove, depth, alpha, beta, maximizing, team = null) {
+  minimaxDepth(ourPokemon, ourHP, oppPokemon, oppHP, ourMoves, oppMoves, ourLastMove, oppLastMove, depth, alpha, beta, maximizing, team = null, availableSwitches = [], request = null) {
     this.nodesEvaluated++;
 
     if (depth >= this.searchDepth) {
@@ -561,7 +634,7 @@ class TypeAwareBot {
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
-            depth + 1, alpha, beta, false, team
+            depth + 1, alpha, beta, false, team, availableSwitches, request
           );
 
           maxScore = Math.max(maxScore, score);
@@ -596,7 +669,7 @@ class TypeAwareBot {
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
-            depth + 1, alpha, beta, true, team
+            depth + 1, alpha, beta, true, team, availableSwitches, request
           );
 
           minScore = Math.min(minScore, score);
@@ -710,7 +783,7 @@ class TypeAwareBot {
   }
 
   /**
-   * NEW: Enhanced evaluation with type effectiveness AND team-aware weights
+   * Enhanced evaluation with type effectiveness (BALANCED weights - proven optimal)
    */
   evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP, team = null) {
     let score = 0;
@@ -719,46 +792,27 @@ class TypeAwareBot {
     if (oppHP <= 0) score += 1000;
     if (ourHP <= 0) score -= 1000;
 
-    // NEW: Type matchup scoring
+    // HP difference (base score)
+    score += ourHP - oppHP;
+
+    // Type matchup scoring (BALANCED weight)
     const ourSpecies = this.dex.species.get(
       ourPokemon.species || ourPokemon.ident.split(':')[1].trim().split(',')[0]
     );
     const oppSpecies = this.dex.species.get(oppPokemon.species);
 
     const typeMatchup = this.calculateTypeMatchupScore(ourSpecies.types, oppSpecies.types);
+    score += typeMatchup * 30;  // Balanced weight
 
-    // NEW: HP ratios for scaling
+    // HP preservation bonus (exponential)
     const ourHPRatio = Math.max(0, ourHP) / 100;
     const oppHPRatio = Math.max(0, oppHP) / 100;
 
-    // NEW: Team-aware evaluation weights
-    const teamStyle = team ? this.analyzeTeamStyle(team) : 'balanced';
+    score += (ourHPRatio ** 2) * 80;  // Balanced HP preservation
+    score -= (oppHPRatio ** 2) * 80;
 
-    if (teamStyle === 'offensive') {
-      // OFFENSIVE TEAMS (wallbreakers): Prioritize damage output and progress
-      // Go for immediate kills, less concerned with HP preservation
-      score += (ourHP - oppHP) * 1.3;     // Slightly increased damage weight
-      score += typeMatchup * 35;          // Increased type advantage importance
-      score += (ourHPRatio ** 2) * 50;    // REDUCED HP preservation (wallbreakers trade)
-      score -= (oppHPRatio ** 2) * 100;   // HEAVILY penalize opponent HP
-      score += (1 - oppHPRatio) * 80;     // HIGH progress bonus (finish them fast)
-    } else if (teamStyle === 'defensive') {
-      // DEFENSIVE TEAMS (setup sweepers + pivots): Preserve HP for setup/pivoting
-      // Setup sweepers NEED HP to set up Dragon Dance, Swords Dance, etc.
-      // Defensive pivots NEED HP to keep pivoting
-      score += (ourHP - oppHP) * 0.8;     // DECREASED raw damage importance
-      score += typeMatchup * 35;          // INCREASED type advantage (switch to good matchups)
-      score += (ourHPRatio ** 2) * 100;   // INCREASED HP preservation (critical for setup)
-      score -= (oppHPRatio ** 2) * 70;    // Decreased opponent HP penalty
-      score += (1 - oppHPRatio) * 40;     // Low progress bonus (patient play)
-    } else {
-      // BALANCED TEAMS: Middle ground
-      score += (ourHP - oppHP);
-      score += typeMatchup * 30;
-      score += (ourHPRatio ** 2) * 80;
-      score -= (oppHPRatio ** 2) * 80;
-      score += (1 - oppHPRatio) * 50;
-    }
+    // Progress bonus (reward reducing opponent HP)
+    score += (1 - oppHPRatio) * 50;
 
     return score;
   }
