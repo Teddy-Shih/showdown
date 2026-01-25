@@ -1,0 +1,516 @@
+TypeAwareBot vs StatefulTreeSearchBot - Loss Analysis
+Total Battles: 10
+TypeAwareBot Losses: 4
+Win Rate: 60.0%
+
+Analysis Goal: Identify why TypeAwareBot lost to TreeSearchBot
+
+================================================================================
+
+BATTLE 5 - LOSS
+Turns: 23
+TypeAwareBot Nodes: 2804
+TypeAwareBot Prunes: 394
+TypeAwareBot Switches: 2
+TypeAwareBot Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+============================================================
+BATTLE: TypeAwareBot vs TreeSearchBot
+Format: Gen 9 OU
+============================================================
+TypeAwareBot: default
+TreeSearchBot: default
+
+--- Turn 1 ---
+TypeAwareBot: switch 2
+TreeSearchBot: move 2
+
+--- Turn 2 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 3 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 4 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 5 ---
+TypeAwareBot: switch 3
+TreeSearchBot: move 2
+
+--- Turn 6 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 7 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TypeAwareBot: default
+
+--- Turn 8 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 9 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 10 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 3
+
+--- Turn 11 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 3
+TreeSearchBot: default
+
+--- Turn 12 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 13 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 14 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 15 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 16 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 17 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 18 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 19 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 20 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 1
+TreeSearchBot: default
+
+--- Turn 21 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 22 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 23 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 23
+
+================================================================================
+
+BATTLE 6 - LOSS
+Turns: 23
+TypeAwareBot Nodes: 2804
+TypeAwareBot Prunes: 394
+TypeAwareBot Switches: 0
+TypeAwareBot Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+============================================================
+BATTLE: TreeSearchBot vs TypeAwareBot
+Format: Gen 9 OU
+============================================================
+TreeSearchBot: default
+TypeAwareBot: default
+
+--- Turn 1 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 1
+
+--- Turn 2 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 1
+TreeSearchBot: default
+
+--- Turn 3 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 2
+
+--- Turn 4 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 1
+
+--- Turn 5 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 1
+TypeAwareBot: default
+
+--- Turn 6 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 3
+
+--- Turn 7 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 3
+TreeSearchBot: default
+
+--- Turn 8 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 3
+
+--- Turn 9 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 3
+
+--- Turn 10 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 3
+TypeAwareBot: default
+
+--- Turn 11 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 1
+TreeSearchBot: default
+
+--- Turn 12 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 1
+TypeAwareBot: default
+
+--- Turn 13 ---
+TreeSearchBot: move 2
+TypeAwareBot: move 2
+TreeSearchBot: default
+
+--- Turn 14 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 2
+TypeAwareBot: default
+
+--- Turn 15 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 1
+
+--- Turn 16 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 1
+
+--- Turn 17 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 3
+
+--- Turn 18 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 1
+
+--- Turn 19 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 1
+
+--- Turn 20 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 2
+TreeSearchBot: default
+
+--- Turn 21 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 1
+
+--- Turn 22 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 1
+TypeAwareBot: default
+
+--- Turn 23 ---
+TreeSearchBot: move 1
+TypeAwareBot: move 3
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 23
+
+================================================================================
+
+BATTLE 7 - LOSS
+Turns: 22
+TypeAwareBot Nodes: 2804
+TypeAwareBot Prunes: 394
+TypeAwareBot Switches: 2
+TypeAwareBot Move History: move 3, move 1, move 1, move 2, move 1, move 1
+
+Battle Log:
+============================================================
+BATTLE: TypeAwareBot vs TreeSearchBot
+Format: Gen 9 OU
+============================================================
+TypeAwareBot: default
+TreeSearchBot: default
+
+--- Turn 1 ---
+TypeAwareBot: switch 2
+TreeSearchBot: move 2
+
+--- Turn 2 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 3 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 4 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 5 ---
+TypeAwareBot: switch 3
+TreeSearchBot: move 2
+
+--- Turn 6 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 7 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TypeAwareBot: default
+
+--- Turn 8 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 9 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 10 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 3
+
+--- Turn 11 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 3
+TreeSearchBot: default
+
+--- Turn 12 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 13 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 14 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 15 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 16 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 17 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 18 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 19 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 20 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 1
+TreeSearchBot: default
+
+--- Turn 21 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 22 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 22
+
+================================================================================
+
+BATTLE 9 - LOSS
+Turns: 26
+TypeAwareBot Nodes: 2804
+TypeAwareBot Prunes: 394
+TypeAwareBot Switches: 1
+TypeAwareBot Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+============================================================
+BATTLE: TypeAwareBot vs TreeSearchBot
+Format: Gen 9 OU
+============================================================
+TypeAwareBot: default
+TreeSearchBot: default
+
+--- Turn 1 ---
+TypeAwareBot: switch 2
+TreeSearchBot: move 2
+
+--- Turn 2 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 3 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 4 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TypeAwareBot: default
+
+--- Turn 5 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 6 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 7 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 8 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 2
+
+--- Turn 9 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+
+--- Turn 10 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 11 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 2
+TreeSearchBot: default
+
+--- Turn 12 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 13 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 14 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 15 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 16 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 17 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 18 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 19 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 20 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 1
+
+--- Turn 21 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 22 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 23 ---
+TypeAwareBot: move 2
+TreeSearchBot: move 1
+TreeSearchBot: default
+
+--- Turn 24 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+
+--- Turn 25 ---
+TypeAwareBot: move 1
+TreeSearchBot: move 1
+TypeAwareBot: default
+
+--- Turn 26 ---
+TypeAwareBot: move 3
+TreeSearchBot: move 1
+
+============================================================
+BATTLE END
+============================================================
+Winner: TreeSearchBot
+Total turns: 26
+
+================================================================================
