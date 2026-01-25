@@ -1,0 +1,94 @@
+TypeAwareBot vs StatefulTreeSearchBot - Round 2 Loss Analysis
+Total Battles: 10
+TypeAwareBot Losses: 6
+Win Rate: 40.0%
+
+Team Compositions:
+Team 1: Baxcalibur, Gholdengo, Great Tusk, Iron Valiant, Rotom-Wash, Kingambit
+Team 2: Hatterene, Magnezone, Slowking, Frosmoth, Landorus-T, Zapdos-Galar
+
+================================================================================
+
+BATTLE 1 - LOSS
+TypeAwareBot Team: Team 1
+TreeSearchBot Team: Team 2
+Turns: 22
+Nodes: 2804
+Prunes: 394
+Switches: 1
+Move History: move 3, move 1, move 1, move 2, move 1, move 1
+
+Battle Log:
+
+
+================================================================================
+
+BATTLE 4 - LOSS
+TypeAwareBot Team: Team 2
+TreeSearchBot Team: Team 1
+Turns: 19
+Nodes: 2804
+Prunes: 394
+Switches: 0
+Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+
+
+================================================================================
+
+BATTLE 6 - LOSS
+TypeAwareBot Team: Team 2
+TreeSearchBot Team: Team 1
+Turns: 21
+Nodes: 2804
+Prunes: 394
+Switches: 0
+Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+
+
+================================================================================
+
+BATTLE 7 - LOSS
+TypeAwareBot Team: Team 1
+TreeSearchBot Team: Team 2
+Turns: 23
+Nodes: 2804
+Prunes: 394
+Switches: 2
+Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+
+
+================================================================================
+
+BATTLE 8 - LOSS
+TypeAwareBot Team: Team 2
+TreeSearchBot Team: Team 1
+Turns: 19
+Nodes: 2804
+Prunes: 394
+Switches: 0
+Move History: move 3, move 1, move 1, move 2, move 1, move 1
+
+Battle Log:
+
+
+================================================================================
+
+BATTLE 9 - LOSS
+TypeAwareBot Team: Team 1
+TreeSearchBot Team: Team 2
+Turns: 32
+Nodes: 2804
+Prunes: 394
+Switches: 1
+Move History: move 1, move 1, move 2, move 1, move 1, move 3
+
+Battle Log:
+
+
+================================================================================
