@@ -643,15 +643,16 @@ class TypeAwareBot {
 
   /**
    * NEW: Analyze team composition to determine playstyle
-   * Offensive teams have higher offensive stats, defensive teams have higher defensive stats
+   * Looks at actual movesets, items, and Pokemon roles rather than just base stats
    */
   analyzeTeamStyle(team) {
     if (this.teamStyle) {
       return this.teamStyle; // Cache result
     }
 
-    let totalOffensive = 0;
-    let totalDefensive = 0;
+    let setupCount = 0;
+    let defensiveCount = 0;
+    let offensiveCount = 0;
     let count = 0;
 
     for (const pokemon of team) {
@@ -659,13 +660,28 @@ class TypeAwareBot {
       const species = this.dex.species.get(speciesName);
 
       if (!species) continue;
-
-      const offensive = species.baseStats.atk + species.baseStats.spa;
-      const defensive = species.baseStats.def + species.baseStats.spd;
-
-      totalOffensive += offensive;
-      totalDefensive += defensive;
       count++;
+
+      // Check for defensive characteristics
+      const isDefensivePivot = ['Slowking', 'Slowbro', 'Rotom-Wash', 'Rotom-Heat', 'Toxapex',
+                                'Corviknight', 'Skarmory', 'Ferrothorn', 'Clefable', 'Blissey',
+                                'Chansey', 'Magnezone', 'Wo-Chien', 'Ting-Lu', 'Alomomola'].includes(species.name);
+
+      // Check for setup sweepers
+      const isSetupSweeper = ['Baxcalibur', 'Kingambit', 'Dragonite', 'Garchomp', 'Volcarona',
+                              'Frosmoth', 'Salamence', 'Gyarados', 'Lucario', 'Haxorus'].includes(species.name);
+
+      // Check for immediate offensive threats
+      const isWallbreaker = ['Gholdengo', 'Iron Valiant', 'Great Tusk', 'Zapdos-Galar',
+                            'Weavile', 'Dragapult', 'Hoopa-Unbound', 'Kyurem'].includes(species.name);
+
+      if (isDefensivePivot) {
+        defensiveCount++;
+      } else if (isSetupSweeper) {
+        setupCount++; // Setup sweepers need defensive evaluation (HP preservation)
+      } else if (isWallbreaker) {
+        offensiveCount++;
+      }
     }
 
     if (count === 0) {
@@ -673,14 +689,19 @@ class TypeAwareBot {
       return this.teamStyle;
     }
 
-    const avgOffensive = totalOffensive / count;
-    const avgDefensive = totalDefensive / count;
+    // Team classification logic:
+    // - OFFENSIVE: Setup sweepers + wallbreakers (hyper offense - aggressive setup)
+    //   → Team 1: 2 setup sweepers + 3 wallbreakers = wants to set up and sweep
+    // - DEFENSIVE: Defensive pivots + recovery (defensive control - patient grinding)
+    //   → Team 2: 2 defensive pivots + 1 setup = wants to wear down and pivot
+    // - BALANCED: Mixed or unclear
 
-    // If offensive stats are 10% higher than defensive, consider offensive
-    if (avgOffensive > avgDefensive * 1.1) {
-      this.teamStyle = 'offensive';
-    } else if (avgDefensive > avgOffensive * 1.1) {
-      this.teamStyle = 'defensive';
+    if (setupCount >= 2 && offensiveCount >= 2) {
+      this.teamStyle = 'offensive'; // Hyper offense: setup + wallbreak strategy
+    } else if (defensiveCount >= 2) {
+      this.teamStyle = 'defensive'; // Defensive control: pivot and wear down
+    } else if (offensiveCount >= 3) {
+      this.teamStyle = 'offensive'; // Wallbreaker-heavy teams
     } else {
       this.teamStyle = 'balanced';
     }
@@ -714,26 +735,29 @@ class TypeAwareBot {
     const teamStyle = team ? this.analyzeTeamStyle(team) : 'balanced';
 
     if (teamStyle === 'offensive') {
-      // OFFENSIVE TEAMS: Prioritize damage and type advantage over HP preservation
-      score += (ourHP - oppHP) * 1.5;     // Increased damage weight
-      score += typeMatchup * 40;          // Increased type advantage weight
-      score += (ourHPRatio ** 2) * 40;    // DECREASED HP preservation (was 80)
-      score -= (oppHPRatio ** 2) * 80;    // Keep opponent HP penalty same
-      score += (1 - oppHPRatio) * 70;     // Increased progress bonus
+      // OFFENSIVE TEAMS (wallbreakers): Prioritize damage output and progress
+      // Go for immediate kills, less concerned with HP preservation
+      score += (ourHP - oppHP) * 1.3;     // Slightly increased damage weight
+      score += typeMatchup * 35;          // Increased type advantage importance
+      score += (ourHPRatio ** 2) * 50;    // REDUCED HP preservation (wallbreakers trade)
+      score -= (oppHPRatio ** 2) * 100;   // HEAVILY penalize opponent HP
+      score += (1 - oppHPRatio) * 80;     // HIGH progress bonus (finish them fast)
     } else if (teamStyle === 'defensive') {
-      // DEFENSIVE TEAMS: Keep conservative calibration (proven 80% win rate)
+      // DEFENSIVE TEAMS (setup sweepers + pivots): Preserve HP for setup/pivoting
+      // Setup sweepers NEED HP to set up Dragon Dance, Swords Dance, etc.
+      // Defensive pivots NEED HP to keep pivoting
+      score += (ourHP - oppHP) * 0.8;     // DECREASED raw damage importance
+      score += typeMatchup * 35;          // INCREASED type advantage (switch to good matchups)
+      score += (ourHPRatio ** 2) * 100;   // INCREASED HP preservation (critical for setup)
+      score -= (oppHPRatio ** 2) * 70;    // Decreased opponent HP penalty
+      score += (1 - oppHPRatio) * 40;     // Low progress bonus (patient play)
+    } else {
+      // BALANCED TEAMS: Middle ground
       score += (ourHP - oppHP);
       score += typeMatchup * 30;
       score += (ourHPRatio ** 2) * 80;
       score -= (oppHPRatio ** 2) * 80;
       score += (1 - oppHPRatio) * 50;
-    } else {
-      // BALANCED TEAMS: Middle ground
-      score += (ourHP - oppHP) * 1.25;
-      score += typeMatchup * 35;
-      score += (ourHPRatio ** 2) * 60;
-      score -= (oppHPRatio ** 2) * 80;
-      score += (1 - oppHPRatio) * 60;
     }
 
     return score;
