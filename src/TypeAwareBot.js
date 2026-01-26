@@ -406,8 +406,9 @@ class TypeAwareBot {
     const currentMatchup = this.calculateTypeMatchupScore(ourSpecies.types, this.opponentActive.types);
 
     // Only consider switches if we're at a significant type disadvantage (matchup < -2)
-    // OR if our HP is low (< 40)
-    if (currentMatchup < -2 || ourHP < 40) {
+    // DO NOT switch on low HP - better to let a Pokemon faint than switch healthy Pokemon into damage
+    // Goal: KO all 6 opponent Pokemon, not preserve our own (winning with 1 alive = winning with 6 alive)
+    if (currentMatchup < -2) {
       for (const switchSlot of availableSwitches) {
         const switchTarget = request.side.pokemon[switchSlot - 1];
         const switchHP = this.parseHP(switchTarget.condition).current;

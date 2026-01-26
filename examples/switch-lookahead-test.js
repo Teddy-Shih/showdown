@@ -9,9 +9,12 @@ const team2 = TEAM_ANTIMETA_LANDO;
 /**
  * Test TypeAwareBot with Switch Lookahead vs StatefulTreeSearchBot
  *
- * NEW FEATURE: Switch Lookahead in Search
+ * NEW FEATURE: Switch Lookahead in Search (Type Disadvantage Only)
  * - Switches are now considered as valid options in the minimax tree
  * - Search can choose to switch instead of attacking if it's better
+ * - ONLY considers switches when at type disadvantage (matchup < -2)
+ * - Does NOT switch on low HP (better to sacrifice than transfer damage)
+ * - Philosophy: Win by KOing all 6 opponent Pokemon, not preserving our own
  * - Evaluates opponent's response to switch before committing
  *
  * REVERTED: Back to balanced evaluation weights (proven optimal at 53.3%)
@@ -110,15 +113,17 @@ class DetailedBattleLogger {
 }
 
 async function main() {
-  const numBattles = parseInt(process.argv[2]) || 10;
+  const numBattles = parseInt(process.argv[2]) || 30;
 
   console.log('='.repeat(80));
   console.log('TYPEAWAREBOT WITH SWITCH LOOKAHEAD VS STATEFULTREESEARCHBOT');
   console.log('='.repeat(80));
   console.log();
-  console.log('🆕 NEW FEATURE: Switch Lookahead in Minimax Search');
+  console.log('🆕 NEW FEATURE: Switch Lookahead (Type Disadvantage Only)');
   console.log('   - Switches are now options in the search tree');
-  console.log('   - Search can choose switch over attack if better');
+  console.log('   - ONLY considers switches at type disadvantage (matchup < -2)');
+  console.log('   - Does NOT switch on low HP (sacrifice > transfer damage)');
+  console.log('   - Philosophy: Win by KOing all 6 opponent Pokemon');
   console.log('   - Evaluates opponent response before committing');
   console.log();
   console.log('✅ REVERTED: Back to balanced evaluation weights');
@@ -133,7 +138,12 @@ async function main() {
   console.log('  With Team 1: 40% (6-9)');
   console.log('  With Team 2: 67% (10-5)');
   console.log();
-  console.log('EXPECTED: Switch lookahead improves decision quality → 60-65% overall');
+  console.log('V1 SWITCH LOOKAHEAD (type disadvantage OR low HP):');
+  console.log('  Overall: 50.0% (5-5 in 10 games)');
+  console.log('  With Team 1: 60% (3-2)');
+  console.log('  With Team 2: 40% (2-3)');
+  console.log();
+  console.log('EXPECTED V2 (type disadvantage ONLY): Better balance, 55-60% overall');
   console.log();
   console.log('='.repeat(80));
   console.log(`Running ${numBattles} battles...`);
@@ -271,9 +281,10 @@ async function main() {
   console.log('='.repeat(80));
   console.log('OVERALL COMPARISON');
   console.log('='.repeat(80));
-  console.log(`Baseline (30 games):    53.3% (16-14)`);
-  console.log(`Switch Lookahead:       ${currentOverall.toFixed(1)}% (${typeAwareWins}-${treeSearchWins})`);
-  console.log(`Change from baseline:   ${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)} percentage points`);
+  console.log(`Baseline (30 games):              53.3% (16-14)`);
+  console.log(`V1 (type disadv OR low HP, 10g):  50.0% (5-5)`);
+  console.log(`V2 (type disadv ONLY, ${numBattles}g):      ${currentOverall.toFixed(1)}% (${typeAwareWins}-${treeSearchWins})`);
+  console.log(`Change from baseline:             ${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)} percentage points`);
   console.log();
 
   if (improvement >= 10) {
