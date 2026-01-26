@@ -405,10 +405,18 @@ class TypeAwareBot {
     const ourSpecies = this.dex.species.get(ourSpeciesName);
     const currentMatchup = this.calculateTypeMatchupScore(ourSpecies.types, this.opponentActive.types);
 
-    // Only consider switches if we're at a significant type disadvantage (matchup < -2)
-    // DO NOT switch on low HP - better to let a Pokemon faint than switch healthy Pokemon into damage
-    // Goal: KO all 6 opponent Pokemon, not preserve our own (winning with 1 alive = winning with 6 alive)
-    if (currentMatchup < -2) {
+    // Check if current Pokemon has Regenerator (heals 33% HP on switch-out)
+    const hasRegenerator = ourSpecies.abilities &&
+      (ourSpecies.abilities['0'] === 'Regenerator' ||
+       ourSpecies.abilities['1'] === 'Regenerator' ||
+       ourSpecies.abilities['H'] === 'Regenerator');
+
+    // Consider switches if:
+    // 1. At type disadvantage (matchup < -2), OR
+    // 2. Has Regenerator AND low HP (< 40) - can heal by switching
+    const shouldConsiderSwitches = currentMatchup < -2 || (hasRegenerator && ourHP < 40);
+
+    if (shouldConsiderSwitches) {
       for (const switchSlot of availableSwitches) {
         const switchTarget = request.side.pokemon[switchSlot - 1];
         const switchHP = this.parseHP(switchTarget.condition).current;
@@ -421,8 +429,10 @@ class TypeAwareBot {
         const switchMatchup = this.calculateTypeMatchupScore(switchSpecies.types, this.opponentActive.types);
 
         // Only evaluate this switch if it improves matchup by at least 2 points
-        if (switchMatchup > currentMatchup + 2) {
+        // OR if we have Regenerator (healing can justify neutral matchups)
+        if (switchMatchup > currentMatchup + 2 || hasRegenerator) {
           const score = this.evaluateSwitchInSearch(
+            ourPokemon, ourHP,
             switchTarget, switchHP,
             this.opponentActive, oppHP,
             oppMoveList, team, availableSwitches, request
@@ -453,15 +463,32 @@ class TypeAwareBot {
   /**
    * NEW: Evaluate switching to a specific Pokemon within search
    * Opponent gets a free hit since switching takes a turn
+   * Accounts for Regenerator healing on switch-out
    * Optimized: assumes worst-case (highest damage) opponent move
    */
-  evaluateSwitchInSearch(switchTarget, switchHP, oppPokemon, oppHP, oppMoves, team, availableSwitches, request) {
+  evaluateSwitchInSearch(currentPokemon, currentHP, switchTarget, switchHP, oppPokemon, oppHP, oppMoves, team, availableSwitches, request) {
     this.nodesEvaluated++;
 
     const switchSpeciesName = switchTarget.ident.split(':')[1].trim().split(',')[0];
     const switchSpecies = this.dex.species.get(switchSpeciesName);
 
-    // Find worst-case damage (assume opponent chooses best move)
+    // Check if current Pokemon has Regenerator (heals 33% max HP on switch-out)
+    const currentSpeciesName = currentPokemon.ident.split(':')[1].trim().split(',')[0];
+    const currentSpecies = this.dex.species.get(currentSpeciesName);
+    const hasRegenerator = currentSpecies.abilities &&
+      (currentSpecies.abilities['0'] === 'Regenerator' ||
+       currentSpecies.abilities['1'] === 'Regenerator' ||
+       currentSpecies.abilities['H'] === 'Regenerator');
+
+    // Calculate Regenerator healing (33% of max HP)
+    let regeneratorBonus = 0;
+    if (hasRegenerator) {
+      const maxHP = 100; // Assuming level 50, actual max HP
+      const healAmount = Math.floor(maxHP * 0.33); // 33% healing
+      regeneratorBonus = healAmount; // Value of getting this Pokemon back with more HP later
+    }
+
+    // Find worst-case damage to switch-in target (assume opponent chooses best move)
     let maxDamage = 0;
     for (const oppMoveName of oppMoves) {
       const oppMoveData = this.dex.moves.get(oppMoveName);
@@ -475,10 +502,15 @@ class TypeAwareBot {
     const newSwitchHP = Math.max(0, switchHP - maxDamage);
 
     // After switch, evaluate the new position
-    const score = this.evaluatePosition(switchTarget, newSwitchHP, oppPokemon, oppHP, team);
+    let score = this.evaluatePosition(switchTarget, newSwitchHP, oppPokemon, oppHP, team);
+
+    // Add Regenerator healing value (current Pokemon can come back later with more HP)
+    score += regeneratorBonus * 0.5; // 50% weight since we might not switch back in
 
     // Apply switch penalty (giving opponent free turn)
-    return score - 100;
+    // Reduced penalty if Regenerator (healing offsets the free turn)
+    const switchPenalty = hasRegenerator ? 50 : 100;
+    return score - switchPenalty;
   }
 
   /**
