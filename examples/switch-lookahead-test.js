@@ -110,40 +110,41 @@ class DetailedBattleLogger {
       return `Turn ${turn}: ${summary}`;
     }).join('\n');
   }
+
+  getSimpleLog() {
+    // Format: "TypeAwareBot used Dragon Dance"
+    return this.logs.map(log => {
+      const botName = log.player === 'p1' ? 'TypeAwareBot' : 'StatefulTreeSearchBot';
+      if (log.action === 'switch') {
+        return `${botName} switched to ${log.pokemon}`;
+      } else {
+        return `${botName} used ${log.move}`;
+      }
+    }).join('\n');
+  }
 }
 
 async function main() {
   const numBattles = parseInt(process.argv[2]) || 30;
 
   console.log('='.repeat(80));
-  console.log('TYPEAWAREBOT WITH SWITCH LOOKAHEAD VS STATEFULTREESEARCHBOT');
+  console.log('TYPEAWAREBOT WITH SETUP MOVE STRATEGIC VALUE');
   console.log('='.repeat(80));
   console.log();
-  console.log('🆕 NEW FEATURE: Switch Lookahead (Type Disadvantage Only)');
-  console.log('   - Switches are now options in the search tree');
-  console.log('   - ONLY considers switches at type disadvantage (matchup < -2)');
-  console.log('   - Does NOT switch on low HP (sacrifice > transfer damage)');
-  console.log('   - Philosophy: Win by KOing all 6 opponent Pokemon');
-  console.log('   - Evaluates opponent response before committing');
+  console.log('🆕 NEW FEATURE: Setup Move Strategic Value');
+  console.log('   - Detects setup moves (Dragon Dance, Swords Dance, etc.)');
+  console.log('   - Values offensive boosts: +50 per Atk/SpA boost');
+  console.log('   - Values speed boosts: +35 per Spe boost');
+  console.log('   - Values defensive boosts: +25 per Def/SpD boost');
+  console.log('   - Capped at +150 per setup move');
+  console.log('   - Pressures opponent setup sweepers: +30 when attacking them');
   console.log();
-  console.log('✅ REVERTED: Back to balanced evaluation weights');
-  console.log('   - HP difference: 1.0');
-  console.log('   - Type matchup: 30');
-  console.log('   - HP preservation: 80');
-  console.log('   - Opponent HP penalty: 80');
-  console.log('   - Progress bonus: 50');
+  console.log('CURRENT BASELINE (Boost Fix, 30 games):');
+  console.log('  Overall: 86.7% (26-4)');
+  console.log('  With Team 1: 87.5% (14-2)');
+  console.log('  With Team 2: 85.7% (12-2)');
   console.log();
-  console.log('BASELINE PERFORMANCE (30 games, original TypeAwareBot):');
-  console.log('  Overall: 53.3% (16-14)');
-  console.log('  With Team 1: 40% (6-9)');
-  console.log('  With Team 2: 67% (10-5)');
-  console.log();
-  console.log('V1 SWITCH LOOKAHEAD (type disadvantage OR low HP):');
-  console.log('  Overall: 50.0% (5-5 in 10 games)');
-  console.log('  With Team 1: 60% (3-2)');
-  console.log('  With Team 2: 40% (2-3)');
-  console.log();
-  console.log('EXPECTED V2 (type disadvantage ONLY): Better balance, 55-60% overall');
+  console.log('EXPECTED IMPACT: +5-10% win rate');
   console.log();
   console.log('='.repeat(80));
   console.log(`Running ${numBattles} battles...`);
@@ -177,9 +178,9 @@ async function main() {
     const typeAwareTeam = i % 2 === 0 ? team1 : team2;
     const typeAwareTeamNum = i % 2 === 0 ? 1 : 2;
 
-    // Capture detailed logs for first 2 losses
+    // Capture detailed logs for ALL losses
     const logger = new DetailedBattleLogger();
-    const shouldCapture = detailedBattleLogs.length < 2;
+    const shouldCapture = true; // Capture all battles to get loss logs
 
     const originalLog = console.log;
     if (shouldCapture) {
@@ -269,22 +270,21 @@ async function main() {
   console.log(`Team 2 (Defensive): ${team2Wins}/${team2Total} wins (${team2Total > 0 ? (team2Wins/team2Total*100).toFixed(1) : '0.0'}%)`);
   console.log();
   console.log('COMPARISON TO BASELINE:');
-  console.log(`  Team 1: Baseline 40% → Current ${team1Total > 0 ? (team1Wins/team1Total*100).toFixed(1) : '0.0'}% (${team1Total > 0 ? ((team1Wins/team1Total*100 - 40) >= 0 ? '+' : '') + (team1Wins/team1Total*100 - 40).toFixed(1) : '0.0'}%)`);
-  console.log(`  Team 2: Baseline 67% → Current ${team2Total > 0 ? (team2Wins/team2Total*100).toFixed(1) : '0.0'}% (${team2Total > 0 ? ((team2Wins/team2Total*100 - 67) >= 0 ? '+' : '') + (team2Wins/team2Total*100 - 67).toFixed(1) : '0.0'}%)`);
+  console.log(`  Team 1: Baseline 87.5% → Current ${team1Total > 0 ? (team1Wins/team1Total*100).toFixed(1) : '0.0'}% (${team1Total > 0 ? ((team1Wins/team1Total*100 - 87.5) >= 0 ? '+' : '') + (team1Wins/team1Total*100 - 87.5).toFixed(1) : '0.0'}%)`);
+  console.log(`  Team 2: Baseline 85.7% → Current ${team2Total > 0 ? (team2Wins/team2Total*100).toFixed(1) : '0.0'}% (${team2Total > 0 ? ((team2Wins/team2Total*100 - 85.7) >= 0 ? '+' : '') + (team2Wins/team2Total*100 - 85.7).toFixed(1) : '0.0'}%)`);
   console.log();
 
   // Overall comparison
-  const baselineOverall = 53.3;
+  const baselineOverall = 86.7;
   const currentOverall = typeAwareWins/numBattles*100;
   const improvement = currentOverall - baselineOverall;
 
   console.log('='.repeat(80));
   console.log('OVERALL COMPARISON');
   console.log('='.repeat(80));
-  console.log(`Baseline (30 games):              53.3% (16-14)`);
-  console.log(`V1 (type disadv OR low HP, 10g):  50.0% (5-5)`);
-  console.log(`V2 (type disadv ONLY, ${numBattles}g):      ${currentOverall.toFixed(1)}% (${typeAwareWins}-${treeSearchWins})`);
-  console.log(`Change from baseline:             ${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)} percentage points`);
+  console.log(`Boost Fix (30 games):                 86.7% (26-4)`);
+  console.log(`+Setup Move Strategic Value (${numBattles}g):  ${currentOverall.toFixed(1)}% (${typeAwareWins}-${treeSearchWins})`);
+  console.log(`Change from baseline:                 ${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)} percentage points`);
   console.log();
 
   if (improvement >= 10) {
@@ -306,20 +306,21 @@ async function main() {
     console.log();
   }
 
-  // Print detailed battle logs
+  // Print detailed battle logs for ALL losses
   if (detailedBattleLogs.length > 0) {
     console.log('='.repeat(80));
-    console.log('DETAILED BATTLE LOG - FIRST LOSS');
+    console.log(`DETAILED LOSS LOGS (${detailedBattleLogs.length} losses)`);
     console.log('='.repeat(80));
     console.log();
 
-    const firstLoss = detailedBattleLogs[0];
-    console.log(`Battle ${firstLoss.battle} - TypeAwareBot (Team ${firstLoss.team}) LOSS`);
-    console.log('-'.repeat(80));
-    console.log();
-    console.log(firstLoss.logger.getFullLog());
-    console.log();
-    console.log('='.repeat(80));
+    detailedBattleLogs.forEach((loss, index) => {
+      console.log(`Loss ${index + 1}: Battle ${loss.battle} - TypeAwareBot (Team ${loss.team})`);
+      console.log('-'.repeat(80));
+      console.log(loss.logger.getSimpleLog());
+      console.log();
+      console.log('='.repeat(80));
+      console.log();
+    });
   }
 }
 
