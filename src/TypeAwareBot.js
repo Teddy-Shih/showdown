@@ -34,6 +34,16 @@ class TypeAwareBot {
 
     // NEW: Team composition analysis
     this.teamStyle = null; // 'offensive' or 'defensive', cached after first analysis
+
+    // NEW: Entry hazard tracking
+    this.hazards = {
+      ours: { stealthRock: false, spikes: 0, toxicSpikes: 0 },
+      opponent: { stealthRock: false, spikes: 0, toxicSpikes: 0 }
+    };
+
+    // NEW: Status condition tracking
+    this.ourStatus = null;
+    this.opponentStatus = null;
   }
 
   processBattleMessage(message) {
@@ -51,6 +61,72 @@ class TypeAwareBot {
       if (line.includes('|turn|')) {
         this.turnNumber++;
       }
+      // NEW: Entry hazard tracking
+      if (line.includes('|-sidestart|')) {
+        this.processHazard(line);
+      }
+      // NEW: Status condition tracking
+      if (line.includes('|-status|')) {
+        this.processStatus(line);
+      }
+      if (line.includes('|-curestatus|')) {
+        this.processCureStatus(line);
+      }
+    }
+  }
+
+  processHazard(line) {
+    // Format: |-sidestart|p2|move: Stealth Rock
+    const parts = line.split('|');
+    if (parts.length < 4) return;
+
+    const side = parts[2]; // p1 or p2
+    const hazardInfo = parts[3]; // "move: Stealth Rock"
+
+    const isOpponentSide = this.isOpponent(side);
+    const targetHazards = isOpponentSide ? this.hazards.opponent : this.hazards.ours;
+
+    if (hazardInfo.includes('Stealth Rock')) {
+      targetHazards.stealthRock = true;
+    } else if (hazardInfo.includes('Spikes')) {
+      targetHazards.spikes = Math.min(targetHazards.spikes + 1, 3); // Max 3 layers
+    } else if (hazardInfo.includes('Toxic Spikes')) {
+      targetHazards.toxicSpikes = Math.min(targetHazards.toxicSpikes + 1, 2); // Max 2 layers
+    }
+  }
+
+  processStatus(line) {
+    // Format: |-status|p2a: Baxcalibur|brn
+    const parts = line.split('|');
+    if (parts.length < 4) return;
+
+    const target = parts[2];
+    const status = parts[3]; // brn, par, slp, psn, tox, frz
+
+    if (this.isOpponent(target)) {
+      this.opponentStatus = status;
+      if (this.opponentActive) {
+        this.opponentActive.status = status;
+      }
+    } else {
+      this.ourStatus = status;
+    }
+  }
+
+  processCureStatus(line) {
+    // Format: |-curestatus|p2a: Baxcalibur|brn
+    const parts = line.split('|');
+    if (parts.length < 3) return;
+
+    const target = parts[2];
+
+    if (this.isOpponent(target)) {
+      this.opponentStatus = null;
+      if (this.opponentActive) {
+        this.opponentActive.status = null;
+      }
+    } else {
+      this.ourStatus = null;
     }
   }
 
@@ -378,13 +454,17 @@ class TypeAwareBot {
 
       const moveData = this.dex.moves.get(move.id);
 
-      const score = this.minimaxDepth(
+      let score = this.minimaxDepth(
         ourPokemon, ourHP,
         this.opponentActive, oppHP,
         orderedMoves, oppMoveList,
         moveData, null,
         1, alpha, beta, false, team, availableSwitches, request
       );
+
+      // NEW: Add strategic value bonus for hazards and status moves
+      const strategicBonus = this.evaluateMoveStrategicValue(move, this.opponentActive);
+      score += strategicBonus;
 
       if (score > bestScore) {
         bestScore = score;
@@ -461,9 +541,34 @@ class TypeAwareBot {
   }
 
   /**
+   * NEW: Calculate hazard damage on switch-in
+   */
+  calculateHazardDamage(pokemon, hazards) {
+    let damage = 0;
+
+    const speciesName = pokemon.species || pokemon.ident.split(':')[1].trim().split(',')[0];
+    const species = this.dex.species.get(speciesName);
+
+    // Stealth Rock damage (type-dependent: 12.5% * effectiveness)
+    if (hazards.stealthRock) {
+      const rockEffectiveness = this.getTypeEffectiveness('Rock', species.types);
+      damage += 12.5 * rockEffectiveness; // 6.25% to 50% depending on type
+    }
+
+    // Spikes damage (12.5% per layer, max 3 layers)
+    damage += hazards.spikes * 12.5; // 0%, 12.5%, 25%, or 37.5%
+
+    // Toxic Spikes (doesn't do immediate damage, but poisons)
+    // We'll handle this separately in status tracking
+
+    return Math.floor(damage);
+  }
+
+  /**
    * NEW: Evaluate switching to a specific Pokemon within search
    * Opponent gets a free hit since switching takes a turn
    * Accounts for Regenerator healing on switch-out
+   * Accounts for entry hazard damage on switch-in
    * Optimized: assumes worst-case (highest damage) opponent move
    */
   evaluateSwitchInSearch(currentPokemon, currentHP, switchTarget, switchHP, oppPokemon, oppHP, oppMoves, team, availableSwitches, request) {
@@ -498,6 +603,10 @@ class TypeAwareBot {
       );
       maxDamage = Math.max(maxDamage, damage);
     }
+
+    // NEW: Add entry hazard damage on switch-in
+    const hazardDamage = this.calculateHazardDamage(switchTarget, this.hazards.ours);
+    maxDamage += hazardDamage;
 
     const newSwitchHP = Math.max(0, switchHP - maxDamage);
 
@@ -816,7 +925,131 @@ class TypeAwareBot {
   }
 
   /**
+   * NEW: Check if a Pokemon type is immune to a status condition
+   */
+  isImmuneToStatus(pokemonTypes, status) {
+    // Status move name to status condition mapping
+    const statusConditions = {
+      'thunderwave': 'par',
+      'willowisp': 'brn',
+      'toxic': 'psn',
+      'sleeppowder': 'slp',
+      'spore': 'slp',
+      'stunspore': 'par'
+    };
+
+    const condition = statusConditions[status.toLowerCase().replace(/[^a-z]/g, '')] || status;
+
+    // Type immunities
+    if (condition === 'par' || condition === 'paralysis') {
+      // Electric types immune to paralysis
+      if (pokemonTypes.includes('Electric')) return true;
+    }
+
+    if (condition === 'brn' || condition === 'burn') {
+      // Fire types immune to burn
+      if (pokemonTypes.includes('Fire')) return true;
+    }
+
+    if (condition === 'psn' || condition === 'tox' || condition === 'poison') {
+      // Poison and Steel types immune to poison
+      if (pokemonTypes.includes('Poison') || pokemonTypes.includes('Steel')) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * NEW: Evaluate strategic value of a move (hazards, status, etc.)
+   */
+  evaluateMoveStrategicValue(move, oppPokemon) {
+    let bonus = 0;
+
+    const moveData = this.dex.moves.get(move.id || move);
+    if (!moveData) return 0;
+
+    const moveName = moveData.name.toLowerCase();
+    const oppSpecies = this.dex.species.get(oppPokemon.species);
+
+    // Entry Hazard Value
+    if (moveName.includes('stealth rock') || moveName === 'stealthrock') {
+      // High value if we don't have Stealth Rock up yet
+      if (!this.hazards.opponent.stealthRock) {
+        bonus += 150; // Stealth Rock is extremely valuable
+      }
+    }
+
+    if (moveName.includes('spikes')) {
+      // Value setting up Spikes (diminishing returns)
+      if (this.hazards.opponent.spikes < 3) {
+        bonus += 100 - (this.hazards.opponent.spikes * 30); // 100, 70, 40
+      }
+    }
+
+    // Hazard removal value
+    if (moveName === 'rapidspin' || moveName === 'rapid spin' || moveName === 'defog') {
+      // High value if we have hazards on our side
+      if (this.hazards.ours.stealthRock || this.hazards.ours.spikes > 0) {
+        bonus += 120;
+      }
+    }
+
+    // Status Move Value
+    const statusMoves = {
+      'thunderwave': 'par',
+      'thunder wave': 'par',
+      'willowisp': 'brn',
+      'will-o-wisp': 'brn',
+      'toxic': 'tox',
+      'sleeppowder': 'slp',
+      'sleep powder': 'slp',
+      'spore': 'slp',
+      'stunspore': 'par',
+      'stun spore': 'par'
+    };
+
+    const inflictsStatus = statusMoves[moveName];
+    if (inflictsStatus) {
+      // Don't value status if opponent already has status or is immune
+      if (!this.opponentStatus && !oppPokemon.status) {
+        if (!this.isImmuneToStatus(oppSpecies.types, inflictsStatus)) {
+          // Burn is very valuable against physical attackers
+          if (inflictsStatus === 'brn') {
+            if (oppSpecies.baseStats.atk > oppSpecies.baseStats.spa) {
+              bonus += 100; // Burning a physical attacker is very valuable
+            } else {
+              bonus += 40; // Still useful but less critical
+            }
+          }
+
+          // Paralysis is very valuable against fast threats
+          if (inflictsStatus === 'par') {
+            if (oppSpecies.baseStats.spe > 100) {
+              bonus += 90; // Paralyzing fast Pokemon is very valuable
+            } else {
+              bonus += 50;
+            }
+          }
+
+          // Toxic is valuable for long battles
+          if (inflictsStatus === 'tox' || inflictsStatus === 'psn') {
+            bonus += 60;
+          }
+
+          // Sleep is extremely powerful
+          if (inflictsStatus === 'slp') {
+            bonus += 120; // Sleep is nearly as good as a KO
+          }
+        }
+      }
+    }
+
+    return bonus;
+  }
+
+  /**
    * Enhanced evaluation with type effectiveness (BALANCED weights - proven optimal)
+   * NEW: Includes entry hazard and status condition evaluation
    */
   evaluatePosition(ourPokemon, ourHP, oppPokemon, oppHP, team = null) {
     let score = 0;
@@ -847,16 +1080,86 @@ class TypeAwareBot {
     // Progress bonus (reward reducing opponent HP)
     score += (1 - oppHPRatio) * 50;
 
+    // NEW: Entry hazard value
+    // Having hazards on opponent's side is valuable
+    if (this.hazards.opponent.stealthRock) {
+      score += 30; // Passive damage on switches
+    }
+    score += this.hazards.opponent.spikes * 15; // 15 per layer
+
+    // Having hazards on our side is bad
+    if (this.hazards.ours.stealthRock) {
+      score -= 30;
+    }
+    score -= this.hazards.ours.spikes * 15;
+
+    // NEW: Status condition value
+    // Opponent being statused is valuable
+    const oppStatus = oppPokemon.status || this.opponentStatus;
+    if (oppStatus) {
+      if (oppStatus === 'brn' || oppStatus === 'burn') {
+        // Burn is very valuable against physical attackers
+        if (oppSpecies.baseStats.atk > oppSpecies.baseStats.spa) {
+          score += 80;
+        } else {
+          score += 30;
+        }
+      }
+      if (oppStatus === 'par' || oppStatus === 'paralysis') {
+        // Paralysis is valuable (speed reduction)
+        score += 60;
+      }
+      if (oppStatus === 'slp' || oppStatus === 'sleep') {
+        // Sleep is extremely valuable (free turns)
+        score += 100;
+      }
+      if (oppStatus === 'tox' || oppStatus === 'psn') {
+        // Toxic accumulates damage over time
+        score += 50;
+      }
+    }
+
+    // We being statused is bad
+    const ourStatus = ourPokemon.status || this.ourStatus;
+    if (ourStatus) {
+      if (ourStatus === 'brn' || ourStatus === 'burn') {
+        if (ourSpecies.baseStats.atk > ourSpecies.baseStats.spa) {
+          score -= 80; // Very bad for physical attackers
+        } else {
+          score -= 30;
+        }
+      }
+      if (ourStatus === 'par' || ourStatus === 'paralysis') {
+        score -= 60;
+      }
+      if (ourStatus === 'slp' || ourStatus === 'sleep') {
+        score -= 100;
+      }
+      if (ourStatus === 'tox' || ourStatus === 'psn') {
+        score -= 50;
+      }
+    }
+
     return score;
   }
 
   getSpeed(pokemon) {
+    let speed;
     if (pokemon.stats && pokemon.stats.spe) {
-      return pokemon.stats.spe;
+      speed = pokemon.stats.spe;
+    } else {
+      const speciesName = pokemon.ident.split(':')[1].trim().split(',')[0];
+      const species = this.dex.species.get(speciesName);
+      speed = Math.floor((2 * species.baseStats.spe + 31 + 63) * 100 / 100) + 5;
     }
-    const speciesName = pokemon.ident.split(':')[1].trim().split(',')[0];
-    const species = this.dex.species.get(speciesName);
-    return Math.floor((2 * species.baseStats.spe + 31 + 63) * 100 / 100) + 5;
+
+    // NEW: Paralysis quarters speed
+    const status = pokemon.status || (pokemon === this.opponentActive ? this.opponentStatus : this.ourStatus);
+    if (status === 'par' || status === 'paralysis') {
+      speed = Math.floor(speed * 0.5); // Gen 7+ paralysis halves speed (was 0.25 in earlier gens)
+    }
+
+    return speed;
   }
 
   calculateDamage(attacker, defender, move) {
@@ -875,6 +1178,14 @@ class TypeAwareBot {
       (defender.stats?.spd || 250);
 
     let damage = Math.floor(((2 * 100 / 5 + 2) * move.basePower * attackStat / defenseStat) / 50) + 2;
+
+    // NEW: Burn halves physical attack damage
+    const attackerStatus = attacker.status || (attacker === this.opponentActive ? this.opponentStatus : this.ourStatus);
+    if (attackerStatus === 'brn' || attackerStatus === 'burn') {
+      if (move.category === 'Physical') {
+        damage *= 0.5;
+      }
+    }
 
     if (attackerSpecies.types.includes(move.type)) {
       damage *= 1.5;
