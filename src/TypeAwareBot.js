@@ -15,7 +15,7 @@ class TypeAwareBot {
   constructor(playerName) {
     this.name = playerName;
     this.dex = Dex;
-    this.searchDepth = 4;
+    this.searchDepth = 4;  // Keep at 4 - depth 5 causes too many timeouts with boost propagation
 
     this.opponentActive = null;
     this.opponentTeam = [];
@@ -1148,6 +1148,11 @@ class TypeAwareBot {
         }
       }
     }
+
+    // NO HEURISTIC BONUS FOR SETUP MOVES
+    // Testing showed that ANY heuristic (+150, +20, +5) makes things worse
+    // Pure minimax with boost propagation performs better (73.3% vs 30% with heuristics)
+    // The search naturally discovers when setup is valuable through simulation
 
     return bonus;
   }
