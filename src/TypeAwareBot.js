@@ -50,6 +50,8 @@ class TypeAwareBot {
     this.opponentBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
 
     // Setup moves database for minimax boost propagation
+    // ONLY stat-boosting setup moves - NOT stat-lowering attack moves
+    // (Draco Meteor, Overheat, etc. are strong DESPITE the drawback, don't penalize them)
     this.setupMoves = {
       'dragondance': { atk: 1, spe: 1 },
       'swordsdance': { atk: 2 },
@@ -61,15 +63,9 @@ class TypeAwareBot {
       'curse': { atk: 1, def: 1, spe: -1 },
       'agility': { spe: 2 },
       'rockpolish': { spe: 2 },
-      'shellsmash': { atk: 2, spa: 2, spe: 2, def: -1, spd: -1 },
-      // Stat-lowering moves (opponent's perspective)
-      'dracometeor': { spa: -2 },
-      'overheat': { spa: -2 },
-      'leafstorm': { spa: -2 },
-      'makeitrain': { spa: -1 },
-      'closecombat': { def: -1, spd: -1 },
-      'superpower': { atk: -1, def: -1 },
-      'dracobarrage': { spa: -1 }
+      'shellsmash': { atk: 2, spa: 2, spe: 2, def: -1, spd: -1 }
+      // NOTE: Removed stat-lowering moves (Draco Meteor, Overheat, Close Combat)
+      // These are powerful attacks DESPITE the drawback - don't penalize them in search
     };
   }
 
