@@ -128,23 +128,27 @@ async function main() {
   const numBattles = parseInt(process.argv[2]) || 30;
 
   console.log('='.repeat(80));
-  console.log('TYPEAWAREBOT WITH SETUP MOVE STRATEGIC VALUE');
+  console.log('TYPEAWAREBOT WITH SETUP MOVE BOOST PROPAGATION');
   console.log('='.repeat(80));
   console.log();
-  console.log('🆕 NEW FEATURE: Setup Move Strategic Value');
-  console.log('   - Detects setup moves (Dragon Dance, Swords Dance, etc.)');
-  console.log('   - Values offensive boosts: +50 per Atk/SpA boost');
-  console.log('   - Values speed boosts: +35 per Spe boost');
-  console.log('   - Values defensive boosts: +25 per Def/SpD boost');
-  console.log('   - Capped at +150 per setup move');
-  console.log('   - Pressures opponent setup sweepers: +30 when attacking them');
+  console.log('🆕 NEW FEATURE: Proper Setup Move Simulation in Minimax');
+  console.log('   - Setup moves (Swords Dance, Dragon Dance, etc.) properly simulated');
+  console.log('   - Boosts applied AFTER current turn, BEFORE next turn (correct timing!)');
+  console.log('   - Minimax naturally discovers when setup is valuable');
+  console.log('   - Boosts capped at ±6 per Pokemon rules');
+  console.log('   - No artificial strategic bonuses - pure search-based evaluation');
+  console.log();
+  console.log('PREVIOUS FAILURES:');
+  console.log('   - Flat +150 bonus: 10% win rate (bonus too high)');
+  console.log('   - Damage-based (no propagation): 20% (setup not in search)');
+  console.log('   - Damage-based + wrong timing: 0% (boost timing bug)');
   console.log();
   console.log('CURRENT BASELINE (Boost Fix, 30 games):');
   console.log('  Overall: 86.7% (26-4)');
   console.log('  With Team 1: 87.5% (14-2)');
   console.log('  With Team 2: 85.7% (12-2)');
   console.log();
-  console.log('EXPECTED IMPACT: +5-10% win rate');
+  console.log('EXPECTED WITH PROPER TIMING: 88-92% win rate');
   console.log();
   console.log('='.repeat(80));
   console.log(`Running ${numBattles} battles...`);
@@ -282,9 +286,14 @@ async function main() {
   console.log('='.repeat(80));
   console.log('OVERALL COMPARISON');
   console.log('='.repeat(80));
-  console.log(`Boost Fix (30 games):                 86.7% (26-4)`);
-  console.log(`+Setup Move Strategic Value (${numBattles}g):  ${currentOverall.toFixed(1)}% (${typeAwareWins}-${treeSearchWins})`);
+  console.log(`Boost Fix Baseline (30 games):        86.7% (26-4)`);
+  console.log(`+Setup Move Propagation (${numBattles}g):   ${currentOverall.toFixed(1)}% (${typeAwareWins}-${treeSearchWins})`);
   console.log(`Change from baseline:                 ${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)} percentage points`);
+  console.log();
+  console.log('Previous failed attempts:');
+  console.log('  - Flat bonus (+150): 10.0% win rate');
+  console.log('  - Damage-based (no propagation): 20.0% win rate');
+  console.log('  - Wrong boost timing: 0.0% win rate');
   console.log();
 
   if (improvement >= 10) {

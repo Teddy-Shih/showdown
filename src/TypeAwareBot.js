@@ -48,6 +48,29 @@ class TypeAwareBot {
     // NEW: Stat boost tracking (for accurate damage calculations in minimax)
     this.ourBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
     this.opponentBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+
+    // Setup moves database for minimax boost propagation
+    this.setupMoves = {
+      'dragondance': { atk: 1, spe: 1 },
+      'swordsdance': { atk: 2 },
+      'quiverdance': { spa: 1, spd: 1, spe: 1 },
+      'nastyplot': { spa: 2 },
+      'calmmind': { spa: 1, spd: 1 },
+      'bulkup': { atk: 1, def: 1 },
+      'coil': { atk: 1, def: 1 },
+      'curse': { atk: 1, def: 1, spe: -1 },
+      'agility': { spe: 2 },
+      'rockpolish': { spe: 2 },
+      'shellsmash': { atk: 2, spa: 2, spe: 2, def: -1, spd: -1 },
+      // Stat-lowering moves (opponent's perspective)
+      'dracometeor': { spa: -2 },
+      'overheat': { spa: -2 },
+      'leafstorm': { spa: -2 },
+      'makeitrain': { spa: -1 },
+      'closecombat': { def: -1, spd: -1 },
+      'superpower': { atk: -1, def: -1 },
+      'dracobarrage': { spa: -1 }
+    };
   }
 
   processBattleMessage(message) {
@@ -808,19 +831,37 @@ class TypeAwareBot {
         for (const oppMoveName of oppMoves) {
           const oppMoveData = this.dex.moves.get(oppMoveName);
 
+          // Step 1: Simulate current turn with CURRENT boosts
           const [newOurHP, newOppHP] = this.simulateExchange(
             ourPokemon, ourHP, moveData,
             oppPokemon, oppHP, oppMoveData,
             ourBoosts, oppBoosts
           );
 
+          // Step 2: Apply boost changes for NEXT turn (if setup moves used)
+          let newOurBoosts = ourBoosts;
+          let newOppBoosts = oppBoosts;
+
+          // Check if our move is a setup move
+          const ourMoveNormalized = moveData.name.toLowerCase().replace(/[^a-z]/g, '');
+          if (this.setupMoves[ourMoveNormalized]) {
+            newOurBoosts = this.applyBoostChanges(ourBoosts, this.setupMoves[ourMoveNormalized]);
+          }
+
+          // Check if opponent's move is a setup move
+          const oppMoveNormalized = oppMoveData.name.toLowerCase().replace(/[^a-z]/g, '');
+          if (this.setupMoves[oppMoveNormalized]) {
+            newOppBoosts = this.applyBoostChanges(oppBoosts, this.setupMoves[oppMoveNormalized]);
+          }
+
+          // Step 3: Recursive call with UPDATED boosts (for next turn)
           const score = this.minimaxDepth(
             ourPokemon, newOurHP,
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
             depth + 1, alpha, beta, false, team, availableSwitches, request,
-            ourBoosts, oppBoosts
+            newOurBoosts, newOppBoosts
           );
 
           maxScore = Math.max(maxScore, score);
@@ -845,19 +886,37 @@ class TypeAwareBot {
         for (const move of orderedOurMoves) {
           const moveData = this.dex.moves.get(move.id);
 
+          // Step 1: Simulate current turn with CURRENT boosts
           const [newOurHP, newOppHP] = this.simulateExchange(
             ourPokemon, ourHP, moveData,
             oppPokemon, oppHP, oppMoveData,
             ourBoosts, oppBoosts
           );
 
+          // Step 2: Apply boost changes for NEXT turn (if setup moves used)
+          let newOurBoosts = ourBoosts;
+          let newOppBoosts = oppBoosts;
+
+          // Check if our move is a setup move
+          const ourMoveNormalized = moveData.name.toLowerCase().replace(/[^a-z]/g, '');
+          if (this.setupMoves[ourMoveNormalized]) {
+            newOurBoosts = this.applyBoostChanges(ourBoosts, this.setupMoves[ourMoveNormalized]);
+          }
+
+          // Check if opponent's move is a setup move
+          const oppMoveNormalized = oppMoveData.name.toLowerCase().replace(/[^a-z]/g, '');
+          if (this.setupMoves[oppMoveNormalized]) {
+            newOppBoosts = this.applyBoostChanges(oppBoosts, this.setupMoves[oppMoveNormalized]);
+          }
+
+          // Step 3: Recursive call with UPDATED boosts (for next turn)
           const score = this.minimaxDepth(
             ourPokemon, newOurHP,
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
             depth + 1, alpha, beta, true, team, availableSwitches, request,
-            ourBoosts, oppBoosts
+            newOurBoosts, newOppBoosts
           );
 
           minScore = Math.min(minScore, score);
@@ -1200,6 +1259,32 @@ class TypeAwareBot {
     } else {
       return 2 / (2 - boost);
     }
+  }
+
+  /**
+   * Apply setup move boost changes to current boosts with ±6 capping
+   */
+  applyBoostChanges(currentBoosts, boostChanges) {
+    const newBoosts = { ...currentBoosts };
+
+    // Apply each boost change with capping at ±6
+    if (boostChanges.atk) {
+      newBoosts.atk = Math.max(-6, Math.min(6, (newBoosts.atk || 0) + boostChanges.atk));
+    }
+    if (boostChanges.def) {
+      newBoosts.def = Math.max(-6, Math.min(6, (newBoosts.def || 0) + boostChanges.def));
+    }
+    if (boostChanges.spa) {
+      newBoosts.spa = Math.max(-6, Math.min(6, (newBoosts.spa || 0) + boostChanges.spa));
+    }
+    if (boostChanges.spd) {
+      newBoosts.spd = Math.max(-6, Math.min(6, (newBoosts.spd || 0) + boostChanges.spd));
+    }
+    if (boostChanges.spe) {
+      newBoosts.spe = Math.max(-6, Math.min(6, (newBoosts.spe || 0) + boostChanges.spe));
+    }
+
+    return newBoosts;
   }
 
   getSpeed(pokemon, boosts = null) {
