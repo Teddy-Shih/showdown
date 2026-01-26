@@ -44,6 +44,10 @@ class TypeAwareBot {
     // NEW: Status condition tracking
     this.ourStatus = null;
     this.opponentStatus = null;
+
+    // NEW: Stat boost tracking (for accurate damage calculations in minimax)
+    this.ourBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    this.opponentBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
   }
 
   processBattleMessage(message) {
@@ -71,6 +75,10 @@ class TypeAwareBot {
       }
       if (line.includes('|-curestatus|')) {
         this.processCureStatus(line);
+      }
+      // NEW: Stat boost tracking
+      if (line.includes('|-boost|') || line.includes('|-unboost|')) {
+        this.processBoost(line);
       }
     }
   }
@@ -130,11 +138,44 @@ class TypeAwareBot {
     }
   }
 
+  processBoost(line) {
+    // Format: |-boost|p2a: Baxcalibur|atk|1
+    // Format: |-unboost|p2a: Baxcalibur|def|1
+    const parts = line.split('|');
+    if (parts.length < 5) return;
+
+    const isBoost = parts[1] === '-boost';
+    const target = parts[2];
+    const stat = parts[3];
+    const amount = parseInt(parts[4]);
+
+    const boostValue = isBoost ? amount : -amount;
+
+    if (this.isOpponent(target)) {
+      if (this.opponentBoosts[stat] !== undefined) {
+        this.opponentBoosts[stat] = Math.max(-6, Math.min(6, this.opponentBoosts[stat] + boostValue));
+      }
+    } else {
+      if (this.ourBoosts[stat] !== undefined) {
+        this.ourBoosts[stat] = Math.max(-6, Math.min(6, this.ourBoosts[stat] + boostValue));
+      }
+    }
+  }
+
   processSwitch(line) {
     const parts = line.split('|');
     if (parts.length < 4) return;
 
     const playerSlot = parts[2];
+
+    // NEW: Reset boosts on switch for both players
+    if (this.isOpponent(playerSlot)) {
+      this.opponentBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    } else {
+      this.ourBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    }
+
+    // Only process opponent switches for tracking
     if (!this.isOpponent(playerSlot)) return;
 
     const pokemonInfo = parts[3];
@@ -459,7 +500,8 @@ class TypeAwareBot {
         this.opponentActive, oppHP,
         orderedMoves, oppMoveList,
         moveData, null,
-        1, alpha, beta, false, team, availableSwitches, request
+        1, alpha, beta, false, team, availableSwitches, request,
+        this.ourBoosts, this.opponentBoosts
       );
 
       // NEW: Add strategic value bonus for hazards and status moves
@@ -725,7 +767,7 @@ class TypeAwareBot {
 
     for (const move of moves) {
       const moveData = this.dex.moves.get(move.id);
-      const damage = this.calculateDamage(ourPokemon, oppPokemon, moveData);
+      const damage = this.calculateDamage(ourPokemon, oppPokemon, moveData, this.ourBoosts, this.opponentBoosts);
 
       let orderScore = 0;
 
@@ -744,7 +786,7 @@ class TypeAwareBot {
     return moveScores.map(ms => ms.move);
   }
 
-  minimaxDepth(ourPokemon, ourHP, oppPokemon, oppHP, ourMoves, oppMoves, ourLastMove, oppLastMove, depth, alpha, beta, maximizing, team = null, availableSwitches = [], request = null) {
+  minimaxDepth(ourPokemon, ourHP, oppPokemon, oppHP, ourMoves, oppMoves, ourLastMove, oppLastMove, depth, alpha, beta, maximizing, team = null, availableSwitches = [], request = null, ourBoosts = null, oppBoosts = null) {
     this.nodesEvaluated++;
 
     if (depth >= this.searchDepth) {
@@ -768,7 +810,8 @@ class TypeAwareBot {
 
           const [newOurHP, newOppHP] = this.simulateExchange(
             ourPokemon, ourHP, moveData,
-            oppPokemon, oppHP, oppMoveData
+            oppPokemon, oppHP, oppMoveData,
+            ourBoosts, oppBoosts
           );
 
           const score = this.minimaxDepth(
@@ -776,7 +819,8 @@ class TypeAwareBot {
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
-            depth + 1, alpha, beta, false, team, availableSwitches, request
+            depth + 1, alpha, beta, false, team, availableSwitches, request,
+            ourBoosts, oppBoosts
           );
 
           maxScore = Math.max(maxScore, score);
@@ -803,7 +847,8 @@ class TypeAwareBot {
 
           const [newOurHP, newOppHP] = this.simulateExchange(
             ourPokemon, ourHP, moveData,
-            oppPokemon, oppHP, oppMoveData
+            oppPokemon, oppHP, oppMoveData,
+            ourBoosts, oppBoosts
           );
 
           const score = this.minimaxDepth(
@@ -811,7 +856,8 @@ class TypeAwareBot {
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
             moveData, oppMoveData,
-            depth + 1, alpha, beta, true, team, availableSwitches, request
+            depth + 1, alpha, beta, true, team, availableSwitches, request,
+            ourBoosts, oppBoosts
           );
 
           minScore = Math.min(minScore, score);
@@ -828,28 +874,28 @@ class TypeAwareBot {
     }
   }
 
-  simulateExchange(ourPokemon, ourHP, ourMove, oppPokemon, oppHP, oppMove) {
+  simulateExchange(ourPokemon, ourHP, ourMove, oppPokemon, oppHP, oppMove, ourBoosts = null, oppBoosts = null) {
     let newOurHP = ourHP;
     let newOppHP = oppHP;
 
-    const ourSpeed = this.getSpeed(ourPokemon);
-    const oppSpeed = oppPokemon.stats.spe;
+    const ourSpeed = this.getSpeed(ourPokemon, ourBoosts);
+    const oppSpeed = this.getSpeed(oppPokemon, oppBoosts);
 
     let firstIsOurs = ourSpeed >= oppSpeed;
 
     if (firstIsOurs) {
-      const damage = this.calculateDamage(ourPokemon, oppPokemon, ourMove);
+      const damage = this.calculateDamage(ourPokemon, oppPokemon, ourMove, ourBoosts, oppBoosts);
       newOppHP -= damage;
       if (newOppHP <= 0) return [newOurHP, Math.max(0, newOppHP)];
 
-      const oppDamage = this.calculateDamage(oppPokemon, ourPokemon, oppMove);
+      const oppDamage = this.calculateDamage(oppPokemon, ourPokemon, oppMove, oppBoosts, ourBoosts);
       newOurHP -= oppDamage;
     } else {
-      const oppDamage = this.calculateDamage(oppPokemon, ourPokemon, oppMove);
+      const oppDamage = this.calculateDamage(oppPokemon, ourPokemon, oppMove, oppBoosts, ourBoosts);
       newOurHP -= oppDamage;
       if (newOurHP <= 0) return [Math.max(0, newOurHP), newOppHP];
 
-      const damage = this.calculateDamage(ourPokemon, oppPokemon, ourMove);
+      const damage = this.calculateDamage(ourPokemon, oppPokemon, ourMove, ourBoosts, oppBoosts);
       newOppHP -= damage;
     }
 
@@ -1143,7 +1189,20 @@ class TypeAwareBot {
     return score;
   }
 
-  getSpeed(pokemon) {
+  /**
+   * Get stat boost multiplier for damage/speed calculations
+   * Boost stages: -6 to +6
+   * Formula: (2 + boost) / 2 for positive, 2 / (2 - boost) for negative
+   */
+  getBoostMultiplier(boost) {
+    if (boost >= 0) {
+      return (2 + boost) / 2;
+    } else {
+      return 2 / (2 - boost);
+    }
+  }
+
+  getSpeed(pokemon, boosts = null) {
     let speed;
     if (pokemon.stats && pokemon.stats.spe) {
       speed = pokemon.stats.spe;
@@ -1153,16 +1212,21 @@ class TypeAwareBot {
       speed = Math.floor((2 * species.baseStats.spe + 31 + 63) * 100 / 100) + 5;
     }
 
-    // NEW: Paralysis quarters speed
+    // Apply speed boosts if provided
+    if (boosts && boosts.spe) {
+      speed = Math.floor(speed * this.getBoostMultiplier(boosts.spe));
+    }
+
+    // Paralysis halves speed
     const status = pokemon.status || (pokemon === this.opponentActive ? this.opponentStatus : this.ourStatus);
     if (status === 'par' || status === 'paralysis') {
-      speed = Math.floor(speed * 0.5); // Gen 7+ paralysis halves speed (was 0.25 in earlier gens)
+      speed = Math.floor(speed * 0.5); // Gen 7+ paralysis halves speed
     }
 
     return speed;
   }
 
-  calculateDamage(attacker, defender, move) {
+  calculateDamage(attacker, defender, move, attackerBoosts = null, defenderBoosts = null) {
     if (!move.basePower) return 0;
 
     const attackerSpecies = this.dex.species.get(
@@ -1170,16 +1234,31 @@ class TypeAwareBot {
     );
     const defenderSpecies = this.dex.species.get(defender.species);
 
-    const attackStat = move.category === 'Physical' ?
+    let attackStat = move.category === 'Physical' ?
       (attacker.stats?.atk || 250) :
       (attacker.stats?.spa || 250);
-    const defenseStat = move.category === 'Physical' ?
+    let defenseStat = move.category === 'Physical' ?
       (defender.stats?.def || 250) :
       (defender.stats?.spd || 250);
 
+    // Apply stat boosts
+    if (attackerBoosts) {
+      const attackBoost = move.category === 'Physical' ? attackerBoosts.atk : attackerBoosts.spa;
+      if (attackBoost) {
+        attackStat = Math.floor(attackStat * this.getBoostMultiplier(attackBoost));
+      }
+    }
+
+    if (defenderBoosts) {
+      const defenseBoost = move.category === 'Physical' ? defenderBoosts.def : defenderBoosts.spd;
+      if (defenseBoost) {
+        defenseStat = Math.floor(defenseStat * this.getBoostMultiplier(defenseBoost));
+      }
+    }
+
     let damage = Math.floor(((2 * 100 / 5 + 2) * move.basePower * attackStat / defenseStat) / 50) + 2;
 
-    // NEW: Burn halves physical attack damage
+    // Burn halves physical attack damage
     const attackerStatus = attacker.status || (attacker === this.opponentActive ? this.opponentStatus : this.ourStatus);
     if (attackerStatus === 'brn' || attackerStatus === 'burn') {
       if (move.category === 'Physical') {
