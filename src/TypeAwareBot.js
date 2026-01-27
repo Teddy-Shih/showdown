@@ -35,6 +35,10 @@ class TypeAwareBot {
     // NEW: Team composition analysis
     this.teamStyle = null; // 'offensive' or 'defensive', cached after first analysis
 
+    // NEW: Team coverage and matchup analysis
+    this.teamCoverage = null; // Cached coverage analysis for our team
+    this.opponentThreats = new Map(); // Track which opponent Pokemon threaten which of ours
+
     // NEW: Entry hazard tracking
     this.hazards = {
       ours: { stealthRock: false, spikes: 0, toxicSpikes: 0 },
@@ -311,6 +315,192 @@ class TypeAwareBot {
     }
 
     return stats;
+  }
+
+  /**
+   * NEW: Analyze team coverage and build matchup matrix
+   * Returns map of type -> Pokemon that resist/counter it
+   */
+  analyzeTeamCoverage(team) {
+    if (!team || team.length === 0) return null;
+
+    const coverage = {
+      resistances: {}, // Which Pokemon resist each type
+      offensiveCoverage: {}, // Which Pokemon can hit each type super effectively
+      checks: {} // Which Pokemon can handle which opponent Pokemon
+    };
+
+    // Build resistance map
+    for (const teammate of team) {
+      if (!teammate || !teammate.species) continue;
+
+      const speciesName = teammate.species || teammate.ident?.split(':')[1]?.trim()?.split(',')[0];
+      if (!speciesName) continue;
+
+      const species = this.dex.species.get(speciesName);
+      if (!species) continue;
+
+      // Check what types this Pokemon resists
+      for (const attackType of ['Fire', 'Water', 'Grass', 'Electric', 'Ice', 'Fighting', 'Poison', 'Ground', 'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy']) {
+        let effectiveness = 1;
+
+        for (const defenseType of species.types) {
+          const typeData = this.dex.types.get(defenseType);
+          const taken = typeData.damageTaken[attackType];
+
+          if (taken === 3) { // Immune
+            effectiveness = 0;
+            break;
+          } else if (taken === 2) { // Resist
+            effectiveness *= 0.5;
+          } else if (taken === 1) { // Weak
+            effectiveness *= 2;
+          }
+        }
+
+        // If this Pokemon resists or is immune, track it
+        if (effectiveness <= 0.5) {
+          if (!coverage.resistances[attackType]) {
+            coverage.resistances[attackType] = [];
+          }
+          coverage.resistances[attackType].push({
+            pokemon: speciesName,
+            hp: this.parseHP(teammate.condition).current,
+            effectiveness
+          });
+        }
+      }
+    }
+
+    return coverage;
+  }
+
+  /**
+   * NEW: Find which teammate has the best matchup against an opponent
+   * Returns { pokemon, score, canSwitch } object
+   */
+  findBestMatchup(team, oppPokemon, currentPokemon, currentHP) {
+    if (!team || team.length === 0) return null;
+
+    const oppSpecies = this.dex.species.get(oppPokemon.species);
+    if (!oppSpecies) return null;
+
+    let bestMatchup = {
+      pokemon: null,
+      speciesName: null,
+      score: -Infinity,
+      typeAdvantage: 0,
+      canSwitch: false
+    };
+
+    for (const teammate of team) {
+      if (!teammate || !teammate.species) continue;
+
+      const speciesName = teammate.species || teammate.ident?.split(':')[1]?.trim()?.split(',')[0];
+      if (!speciesName) continue;
+
+      // Skip if this is current Pokemon
+      const currentSpeciesName = currentPokemon.species || currentPokemon.ident?.split(':')[1]?.trim()?.split(',')[0];
+      if (speciesName === currentSpeciesName) continue;
+
+      // Skip if fainted
+      const hp = this.parseHP(teammate.condition).current;
+      if (hp <= 0) continue;
+
+      const species = this.dex.species.get(speciesName);
+      if (!species) continue;
+
+      // Calculate type matchup score
+      const typeScore = this.calculateTypeMatchupScore(species.types, oppSpecies.types);
+
+      // Calculate estimated damage advantage
+      const ourMoves = teammate.moves || this.estimateCommonMoves(species);
+      let bestDamageToOpp = 0;
+
+      for (const moveName of ourMoves) {
+        const moveData = this.dex.moves.get(moveName);
+        if (moveData && moveData.basePower) {
+          const damage = this.calculateDamageWithTypes(
+            { species: speciesName, types: species.types, stats: this.estimateStats(speciesName, 100) },
+            moveData,
+            oppPokemon
+          );
+          bestDamageToOpp = Math.max(bestDamageToOpp, damage);
+        }
+      }
+
+      // Estimate damage taken from opponent
+      const oppMoves = Array.from(oppPokemon.moves || []);
+      let worstDamageTaken = 0;
+
+      for (const oppMoveName of oppMoves) {
+        const oppMoveData = this.dex.moves.get(oppMoveName);
+        if (oppMoveData && oppMoveData.basePower) {
+          const damage = this.calculateDamageWithTypes(
+            oppPokemon,
+            oppMoveData,
+            { species: speciesName, types: species.types, stats: this.estimateStats(speciesName, 100) }
+          );
+          worstDamageTaken = Math.max(worstDamageTaken, damage);
+        }
+      }
+
+      // Score = type advantage + damage ratio + HP
+      let score = typeScore * 50;
+      score += (bestDamageToOpp - worstDamageTaken) * 0.5;
+      score += hp * 0.3; // Prefer healthy Pokemon
+
+      // Check if this is a better matchup
+      if (score > bestMatchup.score) {
+        bestMatchup = {
+          pokemon: teammate,
+          speciesName: speciesName,
+          score: score,
+          typeAdvantage: typeScore,
+          canSwitch: hp > worstDamageTaken, // Can survive the switch-in hit
+          hp: hp,
+          damageAdvantage: bestDamageToOpp - worstDamageTaken
+        };
+      }
+    }
+
+    return bestMatchup;
+  }
+
+  /**
+   * NEW: Evaluate overall team health and identify weaknesses
+   * Returns { healthyCount, threatenedTypes, coverageGaps }
+   */
+  evaluateTeamHealth(team) {
+    if (!team || team.length === 0) return null;
+
+    let healthyCount = 0;
+    let totalHP = 0;
+    const activeTypes = new Set();
+
+    for (const teammate of team) {
+      if (!teammate) continue;
+
+      const hp = this.parseHP(teammate.condition).current;
+      if (hp > 0) {
+        healthyCount++;
+        totalHP += hp;
+
+        const speciesName = teammate.species || teammate.ident?.split(':')[1]?.trim()?.split(',')[0];
+        const species = this.dex.species.get(speciesName);
+
+        if (species) {
+          species.types.forEach(type => activeTypes.add(type));
+        }
+      }
+    }
+
+    return {
+      healthyCount,
+      averageHP: healthyCount > 0 ? totalHP / healthyCount : 0,
+      activeTypes: Array.from(activeTypes),
+      teamSize: team.length
+    };
   }
 
   chooseMove(request) {
@@ -645,6 +835,34 @@ class TypeAwareBot {
     const switchSpeciesName = switchTarget.ident.split(':')[1].trim().split(',')[0];
     const switchSpecies = this.dex.species.get(switchSpeciesName);
 
+    // NEW: Use team coverage analysis to boost switches to better matchups
+    let teamMatchupBonus = 0;
+    if (team && team.length > 0) {
+      const bestMatchup = this.findBestMatchup(team, oppPokemon, currentPokemon, currentHP);
+
+      if (bestMatchup && bestMatchup.speciesName === switchSpeciesName) {
+        // This is the best matchup for the opponent - reward the switch
+        teamMatchupBonus += 50; // Base bonus for being best counter
+
+        if (bestMatchup.typeAdvantage > 2) {
+          teamMatchupBonus += 30; // Extra bonus for strong type advantage
+        }
+
+        if (bestMatchup.damageAdvantage > 30) {
+          teamMatchupBonus += 20; // Bonus for damage advantage
+        }
+      }
+
+      // Check team health - if low on healthy Pokemon, preserve this one
+      const teamHealth = this.evaluateTeamHealth(team);
+      if (teamHealth && teamHealth.healthyCount <= 3) {
+        // Low on healthy Pokemon - be more conservative
+        if (currentHP < 30) {
+          teamMatchupBonus += 15; // Switch away from low HP Pokemon to preserve it
+        }
+      }
+    }
+
     // Check if current Pokemon has Regenerator (heals 33% max HP on switch-out)
     const currentSpeciesName = currentPokemon.ident.split(':')[1].trim().split(',')[0];
     const currentSpecies = this.dex.species.get(currentSpeciesName);
@@ -683,12 +901,54 @@ class TypeAwareBot {
     const resetBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
     let score = this.evaluatePosition(switchTarget, newSwitchHP, oppPokemon, oppHP, team, resetBoosts, null);
 
+    // NEW: Revenge killing evaluation
+    // Check if switch-in can outspeed and KO the opponent (revenge kill)
+    const switchSpeed = this.getSpeed(switchTarget, resetBoosts);
+    const oppSpeed = this.getSpeed(oppPokemon, this.opponentBoosts);
+
+    if (switchSpeed > oppSpeed && newSwitchHP > 0 && oppHP > 0) {
+      // Switch-in is faster - check if we can KO
+      // Find best damage we can deal to opponent
+      let maxOurDamage = 0;
+      const switchMoves = switchTarget.moves || [];
+
+      for (const moveName of switchMoves) {
+        const moveData = this.dex.moves.get(moveName);
+        if (moveData.basePower) {
+          const damage = this.calculateDamageWithTypes(
+            switchTarget, moveData,
+            oppPokemon
+          );
+          maxOurDamage = Math.max(maxOurDamage, damage);
+        }
+      }
+
+      // Revenge kill bonus: Can outspeed and KO
+      if (maxOurDamage >= oppHP) {
+        score += 150; // Big bonus for guaranteed revenge kill
+      } else if (maxOurDamage >= oppHP * 0.8) {
+        score += 80; // Good bonus for likely revenge kill (with damage rolls)
+      } else if (maxOurDamage >= oppHP * 0.5) {
+        score += 40; // Moderate bonus for faster + strong hit
+      }
+    }
+
     // Add Regenerator healing value (current Pokemon can come back later with more HP)
     score += regeneratorBonus * 0.5; // 50% weight since we might not switch back in
 
+    // NEW: Add team matchup bonus (from coverage analysis)
+    score += teamMatchupBonus;
+
     // Apply switch penalty (giving opponent free turn)
     // Reduced penalty if Regenerator (healing offsets the free turn)
-    const switchPenalty = hasRegenerator ? 50 : 100;
+    // Further reduced if revenge killing (worth the switch)
+    let switchPenalty = hasRegenerator ? 50 : 100;
+
+    // Reduce penalty significantly if current Pokemon is low HP (forced switch soon anyway)
+    if (currentHP < 30) {
+      switchPenalty = Math.floor(switchPenalty * 0.5);
+    }
+
     return score - switchPenalty;
   }
 
@@ -793,6 +1053,11 @@ class TypeAwareBot {
   orderMoves(moves, ourPokemon, oppPokemon, oppHP) {
     const moveScores = [];
 
+    // NEW: Check speed advantage for better move ordering
+    const ourSpeed = this.getSpeed(ourPokemon, this.ourBoosts);
+    const oppSpeed = this.getSpeed(oppPokemon, this.opponentBoosts);
+    const weFaster = ourSpeed > oppSpeed;
+
     for (const move of moves) {
       const moveData = this.dex.moves.get(move.id);
       const damage = this.calculateDamage(ourPokemon, oppPokemon, moveData, this.ourBoosts, this.opponentBoosts);
@@ -800,10 +1065,25 @@ class TypeAwareBot {
       let orderScore = 0;
 
       if (damage >= oppHP) {
-        orderScore = 100000 + damage;
+        // KO move
+        if (weFaster) {
+          // We're faster AND can KO - guaranteed KO before opponent moves
+          orderScore = 200000 + damage; // Highest priority
+        } else {
+          // We can KO but we're slower - risky (might get KO'd first)
+          orderScore = 100000 + damage; // High priority but less than if faster
+        }
       } else if (damage > 0) {
-        orderScore = 10000 + damage;
+        // Damaging move but not KO
+        if (weFaster) {
+          // Faster = more valuable (chip damage before opponent can act)
+          orderScore = 15000 + damage;
+        } else {
+          // Slower = less valuable
+          orderScore = 10000 + damage;
+        }
       } else {
+        // Status/utility move
         orderScore = moveData.basePower || 0;
       }
 
@@ -1258,6 +1538,33 @@ class TypeAwareBot {
       }
       if (ourStatus === 'tox' || ourStatus === 'psn') {
         score -= 50;
+      }
+    }
+
+    // NEW: Speed control evaluation
+    // Having speed advantage is valuable - move first, KO before getting hit
+    if (ourHP > 0 && oppHP > 0) {
+      const ourSpeed = this.getSpeed(ourPokemon, ourBoosts);
+      const oppSpeed = this.getSpeed(oppPokemon, oppBoosts);
+
+      if (ourSpeed > oppSpeed) {
+        // Speed advantage is valuable, especially when close in HP
+        const speedDiff = Math.min(ourSpeed - oppSpeed, 100); // Cap at 100
+        score += speedDiff * 0.2; // 0.2 per point of speed advantage (max +20)
+
+        // Extra bonus if we're faster and have type advantage
+        if (typeMatchup > 0) {
+          score += 15; // Faster + super effective = likely KO before opponent moves
+        }
+      } else if (oppSpeed > ourSpeed) {
+        // Speed disadvantage is bad, especially at low HP
+        const speedDiff = Math.min(oppSpeed - ourSpeed, 100);
+        score -= speedDiff * 0.15; // 0.15 per point of speed disadvantage (max -15)
+
+        // Extra penalty if opponent is faster and has type advantage
+        if (typeMatchup < 0) {
+          score -= 15; // Slower + weak to opponent = likely KO'd before we move
+        }
       }
     }
 
