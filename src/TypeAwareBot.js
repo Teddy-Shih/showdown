@@ -53,6 +53,26 @@ class TypeAwareBot {
     this.ourBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
     this.opponentBoosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
 
+    // NEW: Weather tracking (affects damage, abilities, moves)
+    this.weather = null; // 'sun', 'rain', 'sand', 'snow', 'harsh_sun', 'heavy_rain'
+    this.weatherTurnsLeft = 0;
+
+    // NEW: Terrain tracking (affects priority, damage, status immunity)
+    this.terrain = null; // 'Grassy', 'Electric', 'Psychic', 'Misty'
+    this.terrainTurnsLeft = 0;
+
+    // NEW: Field condition tracking (affects move order, accuracy, etc.)
+    this.fieldConditions = {
+      trickRoom: false,
+      trickRoomTurnsLeft: 0,
+      gravity: false,
+      gravityTurnsLeft: 0,
+      wonderRoom: false,
+      wonderRoomTurnsLeft: 0,
+      magicRoom: false,
+      magicRoomTurnsLeft: 0
+    };
+
     // Setup moves database for minimax boost propagation
     // Includes both stat-boosting AND stat-lowering moves
     // Bot evaluates trade-offs (e.g., Draco Meteor: high damage now, weak SpA later)
@@ -94,6 +114,7 @@ class TypeAwareBot {
       }
       if (line.includes('|turn|')) {
         this.turnNumber++;
+        this.decrementFieldConditions(); // NEW: Decrement turn counters
       }
       // NEW: Entry hazard tracking
       if (line.includes('|-sidestart|')) {
@@ -109,6 +130,17 @@ class TypeAwareBot {
       // NEW: Stat boost tracking
       if (line.includes('|-boost|') || line.includes('|-unboost|')) {
         this.processBoost(line);
+      }
+      // NEW: Weather tracking
+      if (line.includes('|-weather|')) {
+        this.processWeather(line);
+      }
+      // NEW: Terrain tracking
+      if (line.includes('|-fieldstart|')) {
+        this.processFieldStart(line);
+      }
+      if (line.includes('|-fieldend|')) {
+        this.processFieldEnd(line);
       }
     }
   }
@@ -188,6 +220,172 @@ class TypeAwareBot {
     } else {
       if (this.ourBoosts[stat] !== undefined) {
         this.ourBoosts[stat] = Math.max(-6, Math.min(6, this.ourBoosts[stat] + boostValue));
+      }
+    }
+  }
+
+  /**
+   * NEW: Process weather changes
+   * Format: |-weather|SunnyDay or |-weather|none
+   */
+  processWeather(line) {
+    const parts = line.split('|');
+    if (parts.length < 3) return;
+
+    const weatherName = parts[2].toLowerCase();
+
+    // Clear weather
+    if (weatherName === 'none' || !weatherName) {
+      this.weather = null;
+      this.weatherTurnsLeft = 0;
+      return;
+    }
+
+    // Set weather (default duration: 5 turns, 8 with weather rock items)
+    // We assume default duration since we can't detect items from messages
+    const weatherMap = {
+      'sunnyday': 'sun',
+      'raindance': 'rain',
+      'sandstorm': 'sand',
+      'snow': 'snow',
+      'hail': 'snow', // Gen 9: Hail is now Snow
+      'desolateland': 'harsh_sun',
+      'primordialsea': 'heavy_rain',
+      'deltastream': 'strong_winds'
+    };
+
+    const normalizedWeather = weatherMap[weatherName.replace(/\s/g, '')] || weatherName;
+
+    // Primal weathers don't end naturally
+    if (['harsh_sun', 'heavy_rain', 'strong_winds'].includes(normalizedWeather)) {
+      this.weather = normalizedWeather;
+      this.weatherTurnsLeft = -1; // Infinite
+    } else {
+      this.weather = normalizedWeather;
+      this.weatherTurnsLeft = 5; // Default duration (could be 8 with items)
+    }
+  }
+
+  /**
+   * NEW: Process field condition start
+   * Format: |-fieldstart|move: Grassy Terrain or |-fieldstart|move: Trick Room
+   */
+  processFieldStart(line) {
+    const parts = line.split('|');
+    if (parts.length < 3) return;
+
+    const condition = parts[2].toLowerCase();
+
+    // Terrain tracking
+    if (condition.includes('grassy terrain')) {
+      this.terrain = 'Grassy';
+      this.terrainTurnsLeft = 5;
+    } else if (condition.includes('electric terrain')) {
+      this.terrain = 'Electric';
+      this.terrainTurnsLeft = 5;
+    } else if (condition.includes('psychic terrain')) {
+      this.terrain = 'Psychic';
+      this.terrainTurnsLeft = 5;
+    } else if (condition.includes('misty terrain')) {
+      this.terrain = 'Misty';
+      this.terrainTurnsLeft = 5;
+    }
+
+    // Room effects
+    if (condition.includes('trick room')) {
+      this.fieldConditions.trickRoom = true;
+      this.fieldConditions.trickRoomTurnsLeft = 5;
+    } else if (condition.includes('wonder room')) {
+      this.fieldConditions.wonderRoom = true;
+      this.fieldConditions.wonderRoomTurnsLeft = 5;
+    } else if (condition.includes('magic room')) {
+      this.fieldConditions.magicRoom = true;
+      this.fieldConditions.magicRoomTurnsLeft = 5;
+    } else if (condition.includes('gravity')) {
+      this.fieldConditions.gravity = true;
+      this.fieldConditions.gravityTurnsLeft = 5;
+    }
+  }
+
+  /**
+   * NEW: Process field condition end
+   * Format: |-fieldend|move: Grassy Terrain
+   */
+  processFieldEnd(line) {
+    const parts = line.split('|');
+    if (parts.length < 3) return;
+
+    const condition = parts[2].toLowerCase();
+
+    // Terrain end
+    if (condition.includes('terrain')) {
+      this.terrain = null;
+      this.terrainTurnsLeft = 0;
+    }
+
+    // Room effects end
+    if (condition.includes('trick room')) {
+      this.fieldConditions.trickRoom = false;
+      this.fieldConditions.trickRoomTurnsLeft = 0;
+    } else if (condition.includes('wonder room')) {
+      this.fieldConditions.wonderRoom = false;
+      this.fieldConditions.wonderRoomTurnsLeft = 0;
+    } else if (condition.includes('magic room')) {
+      this.fieldConditions.magicRoom = false;
+      this.fieldConditions.magicRoomTurnsLeft = 0;
+    } else if (condition.includes('gravity')) {
+      this.fieldConditions.gravity = false;
+      this.fieldConditions.gravityTurnsLeft = 0;
+    }
+  }
+
+  /**
+   * NEW: Decrement field condition turn counters each turn
+   */
+  decrementFieldConditions() {
+    // Weather
+    if (this.weather && this.weatherTurnsLeft > 0) {
+      this.weatherTurnsLeft--;
+      if (this.weatherTurnsLeft === 0) {
+        this.weather = null;
+      }
+    }
+
+    // Terrain
+    if (this.terrain && this.terrainTurnsLeft > 0) {
+      this.terrainTurnsLeft--;
+      if (this.terrainTurnsLeft === 0) {
+        this.terrain = null;
+      }
+    }
+
+    // Trick Room
+    if (this.fieldConditions.trickRoom && this.fieldConditions.trickRoomTurnsLeft > 0) {
+      this.fieldConditions.trickRoomTurnsLeft--;
+      if (this.fieldConditions.trickRoomTurnsLeft === 0) {
+        this.fieldConditions.trickRoom = false;
+      }
+    }
+
+    // Other room effects
+    if (this.fieldConditions.wonderRoom && this.fieldConditions.wonderRoomTurnsLeft > 0) {
+      this.fieldConditions.wonderRoomTurnsLeft--;
+      if (this.fieldConditions.wonderRoomTurnsLeft === 0) {
+        this.fieldConditions.wonderRoom = false;
+      }
+    }
+
+    if (this.fieldConditions.magicRoom && this.fieldConditions.magicRoomTurnsLeft > 0) {
+      this.fieldConditions.magicRoomTurnsLeft--;
+      if (this.fieldConditions.magicRoomTurnsLeft === 0) {
+        this.fieldConditions.magicRoom = false;
+      }
+    }
+
+    if (this.fieldConditions.gravity && this.fieldConditions.gravityTurnsLeft > 0) {
+      this.fieldConditions.gravityTurnsLeft--;
+      if (this.fieldConditions.gravityTurnsLeft === 0) {
+        this.fieldConditions.gravity = false;
       }
     }
   }
@@ -1050,32 +1248,133 @@ class TypeAwareBot {
     return score;
   }
 
+  /**
+   * NEW: Get effective priority of a move accounting for terrain and abilities
+   */
+  getEffectivePriority(move, pokemon) {
+    if (!move) return 0;
+
+    let priority = move.priority || 0;
+
+    const moveName = move.name.toLowerCase().replace(/[^a-z]/g, '');
+
+    // Terrain-based priority boosts
+    if (moveName === 'grassyglide' && this.terrain === 'Grassy') {
+      priority = 1; // Grassy Slide gets +1 priority with Grassy Terrain
+    }
+
+    // Other terrain priority moves (for completeness)
+    if (moveName === 'electricterrain' && this.terrain === 'Electric') {
+      // Some moves get priority with Electric Terrain (though rare)
+    }
+
+    // TODO: Ability-based priority (Prankster +1 for status moves, Gale Wings +1 for Flying at full HP)
+    // This would require tracking abilities accurately, which we don't do yet
+
+    return priority;
+  }
+
+  /**
+   * NEW: Determine who moves first accounting for priority and Trick Room
+   */
+  determineMoveOrder(ourSpeed, ourPriority, oppSpeed, oppPriority) {
+    // Higher priority always goes first (even in Trick Room)
+    if (ourPriority > oppPriority) return true;
+    if (oppPriority > ourPriority) return false;
+
+    // Same priority: speed determines order
+    // Trick Room reverses speed order (slower goes first)
+    if (this.fieldConditions.trickRoom) {
+      return ourSpeed <= oppSpeed; // Slower goes first in Trick Room
+    } else {
+      return ourSpeed >= oppSpeed; // Faster goes first normally
+    }
+  }
+
+  /**
+   * NEW: Evaluate how well a move covers the opponent's team
+   * Returns score: positive = good coverage, negative = poor coverage
+   */
+  evaluateMoveCoverageVsTeam(move, oppTeam) {
+    if (!oppTeam || oppTeam.length === 0) return 0;
+    if (!move || !move.type) return 0;
+
+    let coverageScore = 0;
+
+    for (const oppPokemon of oppTeam) {
+      if (!oppPokemon || !oppPokemon.species) continue;
+
+      const species = this.dex.species.get(oppPokemon.species);
+      if (!species) continue;
+
+      const effectiveness = this.getTypeEffectiveness(move.type, species.types);
+
+      if (effectiveness === 0) {
+        // Immune - very bad (e.g., Grass move vs Gholdengo with Good as Gold fails)
+        coverageScore -= 3;
+      } else if (effectiveness < 1) {
+        // Resisted - bad
+        coverageScore -= 1;
+      } else if (effectiveness === 1) {
+        // Neutral - okay (no bonus/penalty)
+        coverageScore += 0;
+      } else if (effectiveness >= 2) {
+        // Super effective - good
+        coverageScore += 2;
+      }
+    }
+
+    return coverageScore;
+  }
+
   orderMoves(moves, ourPokemon, oppPokemon, oppHP) {
     const moveScores = [];
 
-    // NEW: Check speed advantage for better move ordering
     const ourSpeed = this.getSpeed(ourPokemon, this.ourBoosts);
     const oppSpeed = this.getSpeed(oppPokemon, this.opponentBoosts);
-    const weFaster = ourSpeed > oppSpeed;
 
     for (const move of moves) {
       const moveData = this.dex.moves.get(move.id);
       const damage = this.calculateDamage(ourPokemon, oppPokemon, moveData, this.ourBoosts, this.opponentBoosts);
 
+      // NEW: Get effective priority accounting for terrain
+      const ourPriority = this.getEffectivePriority(moveData, ourPokemon);
+      const oppPriority = 0; // Assume opponent uses normal priority (worst case)
+
+      // NEW: Determine who goes first (accounts for priority and Trick Room)
+      const weGoFirst = this.determineMoveOrder(ourSpeed, ourPriority, oppSpeed, oppPriority);
+
+      // NEW: Check if we naturally outspeed (without needing priority)
+      const naturallyFaster = this.determineMoveOrder(ourSpeed, 0, oppSpeed, 0);
+      const needsPriorityToGoFirst = weGoFirst && !naturallyFaster && ourPriority > oppPriority;
+
       let orderScore = 0;
 
       if (damage >= oppHP) {
         // KO move
-        if (weFaster) {
-          // We're faster AND can KO - guaranteed KO before opponent moves
+        if (weGoFirst) {
+          // We go first AND can KO - guaranteed KO
           orderScore = 200000 + damage; // Highest priority
+
+          // NEW: Coverage bonus if we naturally outspeed (priority not needed for move order)
+          // When we outspeed naturally, opponent likely to switch on KO prediction
+          // Prefer moves with better coverage against their team
+          if (naturallyFaster && !needsPriorityToGoFirst) {
+            const coverageBonus = this.evaluateMoveCoverageVsTeam(moveData, this.opponentTeam);
+
+            // Scale coverage bonus: each point of coverage = +50 priority
+            // This can shift preference between moves with same KO power
+            // Example: Grassy Slide (immune to Gholdengo: -3) vs Ivy Cudgel (hits Gholdengo: +0 or better)
+            // Coverage difference: 3+ points = 150+ priority difference
+            orderScore += coverageBonus * 50;
+          }
         } else {
           // We can KO but we're slower - risky (might get KO'd first)
-          orderScore = 100000 + damage; // High priority but less than if faster
+          orderScore = 100000 + damage;
         }
       } else if (damage > 0) {
         // Damaging move but not KO
-        if (weFaster) {
+        if (weGoFirst) {
           // Faster = more valuable (chip damage before opponent can act)
           orderScore = 15000 + damage;
         } else {
@@ -1087,7 +1386,7 @@ class TypeAwareBot {
         orderScore = moveData.basePower || 0;
       }
 
-      moveScores.push({ move, score: orderScore });
+      moveScores.push({ move, score: orderScore, priority: ourPriority, coverage: 0 });
     }
 
     moveScores.sort((a, b) => b.score - a.score);
@@ -1541,31 +1840,38 @@ class TypeAwareBot {
       }
     }
 
-    // NEW: Speed control evaluation
-    // Having speed advantage is valuable - move first, KO before getting hit
+    // NEW: Speed control evaluation (reframed as confidence)
+    // Speed advantage is binary (faster = go first), but we have hidden information
+    // Gradient represents CONFIDENCE in being faster (unknown EVs/IVs/nature/items)
     if (ourHP > 0 && oppHP > 0) {
       const ourSpeed = this.getSpeed(ourPokemon, ourBoosts);
       const oppSpeed = this.getSpeed(oppPokemon, oppBoosts);
 
-      if (ourSpeed > oppSpeed) {
-        // Speed advantage is valuable, especially when close in HP
-        const speedDiff = Math.min(ourSpeed - oppSpeed, 100); // Cap at 100
-        score += speedDiff * 0.2; // 0.2 per point of speed advantage (max +20)
+      // Calculate speed confidence: larger gap = more confident in being actually faster
+      // (accounts for possible Choice Scarf, speed EVs, nature differences we don't know)
+      const speedGap = Math.abs(ourSpeed - oppSpeed);
+      const speedConfidence = Math.min(speedGap / 100, 1.0); // 0.0 to 1.0
 
-        // Extra bonus if we're faster and have type advantage
+      if (ourSpeed > oppSpeed) {
+        // We're (likely) faster - valuable for moving first
+        score += 20 * speedConfidence; // Scale from 0 to +20 based on confidence
+
+        // Extra bonus if faster + type advantage = likely KO before opponent moves
         if (typeMatchup > 0) {
-          score += 15; // Faster + super effective = likely KO before opponent moves
+          score += 15;
         }
       } else if (oppSpeed > ourSpeed) {
-        // Speed disadvantage is bad, especially at low HP
-        const speedDiff = Math.min(oppSpeed - ourSpeed, 100);
-        score -= speedDiff * 0.15; // 0.15 per point of speed disadvantage (max -15)
+        // Opponent is (likely) faster - risky at low HP
+        score -= 15 * speedConfidence; // Scale from 0 to -15 based on confidence
 
-        // Extra penalty if opponent is faster and has type advantage
+        // Extra penalty if slower + type disadvantage = likely KO'd before we move
         if (typeMatchup < 0) {
-          score -= 15; // Slower + weak to opponent = likely KO'd before we move
+          score -= 15;
         }
       }
+
+      // NOTE: If speeds are equal (speedGap = 0), speedConfidence = 0, so no bonus/penalty
+      // This represents maximum uncertainty about who moves first (50/50 tie)
     }
 
     return score;
@@ -1713,10 +2019,11 @@ class TypeAwareBot {
   getTypeEffectiveness(moveType, defenderTypes) {
     let multiplier = 1;
     for (const defenderType of defenderTypes) {
-      const typeData = this.dex.types.get(moveType);
-      if (typeData.damageTaken[defenderType] === 1) multiplier *= 2;
-      if (typeData.damageTaken[defenderType] === 2) multiplier *= 0.5;
-      if (typeData.damageTaken[defenderType] === 3) multiplier *= 0;
+      // Get defender's type data and check how much damage it takes from moveType
+      const defenderTypeData = this.dex.types.get(defenderType);
+      if (defenderTypeData.damageTaken[moveType] === 1) multiplier *= 2;    // Super effective
+      if (defenderTypeData.damageTaken[moveType] === 2) multiplier *= 0.5;  // Not very effective
+      if (defenderTypeData.damageTaken[moveType] === 3) multiplier *= 0;    // Immune
     }
     return multiplier;
   }
