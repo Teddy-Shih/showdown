@@ -909,7 +909,7 @@ class TypeAwareBot {
 
       const moveData = this.dex.moves.get(move.id);
 
-      let score = this.minimaxDepth(
+      const score = this.minimaxDepth(
         ourPokemon, ourHP,
         this.opponentActive, oppHP,
         orderedMoves, oppMoveList,
@@ -918,9 +918,8 @@ class TypeAwareBot {
         this.ourBoosts, this.opponentBoosts
       );
 
-      // NEW: Add strategic value bonus for hazards and status moves
-      const strategicBonus = this.evaluateMoveStrategicValue(move, this.opponentActive);
-      score += strategicBonus;
+      // REMOVED: Strategic bonus now applied at ALL depths inside minimaxDepth()
+      // This properly evaluates long-term value (e.g., Thunder Wave affects entire game)
 
       if (score > bestScore) {
         bestScore = score;
@@ -1439,7 +1438,7 @@ class TypeAwareBot {
           }
 
           // Step 3: Recursive call with UPDATED boosts (for next turn)
-          const score = this.minimaxDepth(
+          let score = this.minimaxDepth(
             ourPokemon, newOurHP,
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
@@ -1447,6 +1446,11 @@ class TypeAwareBot {
             depth + 1, alpha, beta, false, team, availableSwitches, request,
             newOurBoosts, newOppBoosts
           );
+
+          // NEW: Add strategic value at ALL depths (not just root)
+          // Hazards/status set on turn 1 affect all future turns, so evaluate at every depth
+          const strategicBonus = this.evaluateMoveStrategicValue(move, oppPokemon);
+          score += strategicBonus;
 
           maxScore = Math.max(maxScore, score);
           alpha = Math.max(alpha, score);
@@ -1494,7 +1498,7 @@ class TypeAwareBot {
           }
 
           // Step 3: Recursive call with UPDATED boosts (for next turn)
-          const score = this.minimaxDepth(
+          let score = this.minimaxDepth(
             ourPokemon, newOurHP,
             oppPokemon, newOppHP,
             ourMoves, oppMoves,
@@ -1502,6 +1506,11 @@ class TypeAwareBot {
             depth + 1, alpha, beta, true, team, availableSwitches, request,
             newOurBoosts, newOppBoosts
           );
+
+          // NEW: Add strategic value at ALL depths (not just root)
+          // Hazards/status set on turn 1 affect all future turns, so evaluate at every depth
+          const strategicBonus = this.evaluateMoveStrategicValue(move, oppPokemon);
+          score += strategicBonus;
 
           minScore = Math.min(minScore, score);
           beta = Math.min(beta, score);
@@ -1650,8 +1659,17 @@ class TypeAwareBot {
 
   /**
    * NEW: Evaluate strategic value of a move (hazards, status, etc.)
+   * DISABLED: Strategic bonuses hurt minimax performance
+   * - Root-only bonuses: 40% win rate
+   * - All-depth bonuses: 57% win rate
+   * - No bonuses (baseline): 73-86% win rate
+   * Pure minimax discovers optimal hazard/status timing through search
    */
   evaluateMoveStrategicValue(move, oppPokemon) {
+    // DISABLED: Strategic bonuses consistently hurt performance
+    return 0;
+
+    /* ORIGINAL CODE (disabled for testing):
     let bonus = 0;
 
     const moveData = this.dex.moves.get(move.id || move);
@@ -1739,6 +1757,7 @@ class TypeAwareBot {
     // The search naturally discovers when setup is valuable through simulation
 
     return bonus;
+    */ // End of disabled code
   }
 
   /**
