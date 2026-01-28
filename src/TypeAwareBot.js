@@ -1,5 +1,5 @@
 const { Dex } = require('@pkmn/sim');
-const { calculate, Pokemon, Move, Generations } = require('@smogon/calc');
+const { calculate, Pokemon, Move, Field, Generations } = require('@smogon/calc');
 
 /**
  * TypeAwareBot - Adds type effectiveness and switch intelligence to FixedDeepSearchBot
@@ -1963,6 +1963,80 @@ class TypeAwareBot {
   calculateDamage(attacker, defender, move, attackerBoosts = null, defenderBoosts = null) {
     if (!move.basePower) return 0;
 
+    try {
+      const gen = Generations.get(9); // Gen 9
+
+      // Get species names - handle various formats
+      let attackerSpeciesName = attacker.species;
+      if (!attackerSpeciesName && attacker.ident) {
+        const parts = attacker.ident.split(':');
+        if (parts.length > 1) {
+          attackerSpeciesName = parts[1].trim().split(',')[0];
+        }
+      }
+
+      let defenderSpeciesName = defender.species;
+      if (!defenderSpeciesName && defender.ident) {
+        const parts = defender.ident.split(':');
+        if (parts.length > 1) {
+          defenderSpeciesName = parts[1].trim().split(',')[0];
+        }
+      }
+
+      // Validate we have species names
+      if (!attackerSpeciesName || !defenderSpeciesName) {
+        throw new Error(`Missing species names: attacker=${attackerSpeciesName}, defender=${defenderSpeciesName}`);
+      }
+
+      // Get status
+      const attackerStatus = attacker.status || (attacker === this.opponentActive ? this.opponentStatus : this.ourStatus);
+      const defenderStatus = defender.status || (defender === this.opponentActive ? this.opponentStatus : this.ourStatus);
+
+      // Create Pokemon objects with boosts
+      const attackerPokemon = new Pokemon(gen, attackerSpeciesName, {
+        level: 100,
+        boosts: attackerBoosts || {},
+        status: attackerStatus || undefined
+      });
+
+      const defenderPokemon = new Pokemon(gen, defenderSpeciesName, {
+        level: 100,
+        boosts: defenderBoosts || {},
+        status: defenderStatus || undefined
+      });
+
+      // Create Move object
+      const moveObj = new Move(gen, move.name || move.id);
+
+      // Build field conditions with proper Field object
+      const field = new Field({
+        weather: this.weather || undefined,
+        terrain: this.terrain || undefined,
+        isCriticalHit: false // Use average damage (no crits)
+      });
+
+      // Calculate damage
+      const result = calculate(gen, attackerPokemon, defenderPokemon, moveObj, field);
+
+      // Return minimum damage (conservative estimate)
+      if (Array.isArray(result.damage)) {
+        return result.damage[0];
+      }
+      return result.damage;
+
+    } catch (error) {
+      // Fallback to basic calculation if @smogon/calc fails
+      // console.error('Error in @smogon/calc:', error.message);
+      return this.calculateDamageFallback(attacker, defender, move, attackerBoosts, defenderBoosts);
+    }
+  }
+
+  /**
+   * Fallback damage calculation (old method)
+   */
+  calculateDamageFallback(attacker, defender, move, attackerBoosts = null, defenderBoosts = null) {
+    if (!move.basePower) return 0;
+
     const attackerSpecies = this.dex.species.get(
       attacker.species || attacker.ident.split(':')[1].trim().split(',')[0]
     );
@@ -2011,29 +2085,86 @@ class TypeAwareBot {
   }
 
   /**
-   * NEW: Helper for calculating damage with explicit types
+   * Helper for calculating damage with explicit types
+   * Used when we don't have full Pokemon objects (e.g., switch evaluation)
    */
   calculateDamageWithTypes(attacker, move, defender) {
     if (!move.basePower) return 0;
 
-    const attackStat = move.category === 'Physical' ?
-      (attacker.stats?.atk || 250) :
-      (attacker.stats?.spa || 250);
-    const defenseStat = move.category === 'Physical' ?
-      (defender.stats?.def || 250) :
-      (defender.stats?.spd || 250);
+    try {
+      const gen = Generations.get(9);
 
-    let damage = Math.floor(((2 * 100 / 5 + 2) * move.basePower * attackStat / defenseStat) / 50) + 2;
+      // Get species names - handle various formats
+      let attackerSpeciesName = attacker.species;
+      if (!attackerSpeciesName && attacker.ident) {
+        const parts = attacker.ident.split(':');
+        if (parts.length > 1) {
+          attackerSpeciesName = parts[1].trim().split(',')[0];
+        }
+      }
 
-    // STAB
-    if (attacker.types && attacker.types.includes(move.type)) {
-      damage *= 1.5;
+      let defenderSpeciesName = defender.species;
+      if (!defenderSpeciesName && defender.ident) {
+        const parts = defender.ident.split(':');
+        if (parts.length > 1) {
+          defenderSpeciesName = parts[1].trim().split(',')[0];
+        }
+      }
+
+      // Validate we have species names
+      if (!attackerSpeciesName || !defenderSpeciesName) {
+        throw new Error(`Missing species names`);
+      }
+
+      // Create Pokemon objects
+      const attackerPokemon = new Pokemon(gen, attackerSpeciesName, {
+        level: 100
+      });
+
+      const defenderPokemon = new Pokemon(gen, defenderSpeciesName, {
+        level: 100
+      });
+
+      // Create Move object
+      const moveObj = new Move(gen, move.name || move.id);
+
+      // Build field conditions with proper Field object
+      const field = new Field({
+        weather: this.weather || undefined,
+        terrain: this.terrain || undefined,
+        isCriticalHit: false
+      });
+
+      // Calculate damage
+      const result = calculate(gen, attackerPokemon, defenderPokemon, moveObj, field);
+
+      // Return minimum damage (conservative estimate)
+      if (Array.isArray(result.damage)) {
+        return result.damage[0];
+      }
+      return result.damage;
+
+    } catch (error) {
+      // Fallback to basic calculation
+      const attackStat = move.category === 'Physical' ?
+        (attacker.stats?.atk || 250) :
+        (attacker.stats?.spa || 250);
+      const defenseStat = move.category === 'Physical' ?
+        (defender.stats?.def || 250) :
+        (defender.stats?.spd || 250);
+
+      let damage = Math.floor(((2 * 100 / 5 + 2) * move.basePower * attackStat / defenseStat) / 50) + 2;
+
+      // STAB
+      if (attacker.types && attacker.types.includes(move.type)) {
+        damage *= 1.5;
+      }
+
+      const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
+      damage *= effectiveness;
+
+      return Math.floor(damage);
     }
-
-    const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
-    damage *= effectiveness;
-
-    return Math.floor(damage);
   }
 
   getTypeEffectiveness(moveType, defenderTypes) {
