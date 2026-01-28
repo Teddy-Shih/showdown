@@ -82,9 +82,6 @@ class HumanVsBotBattle {
 
   async processBotStream(stream) {
     for await (const chunk of stream) {
-      // Pass messages to bot for state tracking
-      this.bot.receiveMessage(chunk);
-
       const lines = chunk.split('\n');
 
       for (const line of lines) {
@@ -170,9 +167,6 @@ class HumanVsBotBattle {
           console.log(`${winner.toUpperCase()} WINS!`);
           console.log('='.repeat(80));
         }
-
-        // Pass to bot for tracking
-        this.bot.receiveMessage(line);
       }
     }
   }
