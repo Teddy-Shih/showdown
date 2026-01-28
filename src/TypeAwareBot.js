@@ -1,4 +1,5 @@
 const { Dex } = require('@pkmn/sim');
+const { calculate, Pokemon, Move, Generations } = require('@smogon/calc');
 
 /**
  * TypeAwareBot - Adds type effectiveness and switch intelligence to FixedDeepSearchBot
