@@ -12,6 +12,538 @@ const ImprovedTypeAwareBot = require('./src/ImprovedTypeAwareBot');
 
 const { TEAM_SPECS_GHOLDENGO, TEAM_ANTIMETA_LANDO } = require('./data/ou-teams');
 
+// Smogon Sample Teams from https://www.smogon.com/forums/threads/sv-ou-sample-teams-new-samples-added-post-scl-and-olt.3712513/
+const SAMPLE_TEAMS = {
+  'offensive': {
+    name: 'Offensive (Original)',
+    description: 'Baxcalibur, Gholdengo, Great Tusk, Iron Valiant, Rotom-W, Kingambit',
+    team: TEAM_SPECS_GHOLDENGO
+  },
+  'defensive': {
+    name: 'Defensive (Original)',
+    description: 'Hatterene, Magnezone, Slowking, Frosmoth, Landorus-T, Zapdos-G',
+    team: TEAM_ANTIMETA_LANDO
+  },
+  'dragonite-screens': {
+    name: 'Dragonite + Kingambit Screens',
+    description: 'Hyper Offense with dual screens and setup sweepers',
+    team: `Iron Valiant @ Booster Energy
+Ability: Quark Drive
+Tera Type: Steel
+EVs: 84 Atk / 172 SpA / 252 Spe
+Naive Nature
+- Moonblast
+- Close Combat
+- Taunt
+- Knock Off
+
+Great Tusk @ Booster Energy
+Ability: Protosynthesis
+Tera Type: Poison
+EVs: 248 HP / 4 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Headlong Rush
+- Head Smash
+- Taunt
+- Bulk Up
+
+Dragonite @ Leftovers
+Ability: Multiscale
+Tera Type: Flying
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Tera Blast
+- Earthquake
+- Substitute
+- Dragon Dance
+
+Deoxys-Speed @ Light Clay
+Ability: Pressure
+Tera Type: Ghost
+EVs: 248 HP / 108 SpA / 152 Spe
+Timid Nature
+IVs: 0 Atk
+- Reflect
+- Light Screen
+- Taunt
+- Psycho Boost
+
+Glimmora @ Power Herb
+Ability: Toxic Debris
+Tera Type: Ghost
+EVs: 4 Def / 252 SpA / 252 Spe
+Modest Nature
+- Meteor Beam
+- Earth Power
+- Stealth Rock
+- Mortal Spin
+
+Kingambit @ Lum Berry
+Ability: Supreme Overlord
+Tera Type: Fighting
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Iron Head
+- Low Kick
+- Sucker Punch
+- Swords Dance`
+  },
+  'venusaur-sun': {
+    name: 'Venusaur Sun',
+    description: 'Sun team with Chlorophyll Venusaur and Protosynthesis abusers',
+    team: `Great Tusk @ Assault Vest
+Ability: Protosynthesis
+Tera Type: Water
+EVs: 160 HP / 132 Atk / 12 SpD / 204 Spe
+Adamant Nature
+- Headlong Rush
+- Rapid Spin
+- Ice Spinner
+- Close Combat
+
+Walking Wake @ Wise Glasses
+Ability: Protosynthesis
+Tera Type: Ghost
+EVs: 12 HP / 244 SpA / 252 Spe
+Timid Nature
+- Hydro Steam
+- Draco Meteor
+- Flamethrower
+- Flip Turn
+
+Kingambit @ Air Balloon
+Ability: Supreme Overlord
+Tera Type: Ghost
+EVs: 140 HP / 252 Atk / 112 Spe
+Adamant Nature
+- Swords Dance
+- Kowtow Cleave
+- Iron Head
+- Sucker Punch
+
+Venusaur @ Life Orb
+Ability: Chlorophyll
+Tera Type: Fire
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Growth
+- Giga Drain
+- Weather Ball
+- Sludge Bomb
+
+Ninetales @ Heat Rock
+Ability: Drought
+Tera Type: Ghost
+EVs: 248 HP / 44 Def / 216 Spe
+Timid Nature
+IVs: 0 Atk
+- Will-O-Wisp
+- Weather Ball
+- Healing Wish
+- Encore
+
+Raging Bolt @ Air Balloon
+Ability: Protosynthesis
+Tera Type: Fairy
+EVs: 4 HP / 252 SpA / 252 Spe
+Modest Nature
+IVs: 20 Atk
+- Thunderbolt
+- Thunderclap
+- Dragon Pulse
+- Calm Mind`
+  },
+  'neo-grassy': {
+    name: 'Neo Grassy',
+    description: 'Grassy Terrain team with Rillaboom and powerful attackers',
+    team: `Rillaboom @ Life Orb
+Ability: Grassy Surge
+Tera Type: Fairy
+EVs: 72 HP / 252 Atk / 184 Spe
+Adamant Nature
+- Grassy Glide
+- Tera Blast
+- Knock Off
+- Swords Dance
+
+Serperior @ Choice Scarf
+Ability: Contrary
+Tera Type: Grass
+EVs: 32 HP / 252 SpA / 224 Spe
+Modest Nature
+- Leaf Storm
+- Knock Off
+- Giga Drain
+- Glare
+
+Heatran @ Air Balloon
+Ability: Flash Fire
+Tera Type: Ghost
+EVs: 248 HP / 16 Atk / 208 SpD / 36 Spe
+Sassy Nature
+- Magma Storm
+- Heavy Slam
+- Taunt
+- Stealth Rock
+
+Gholdengo @ Grassy Seed
+Ability: Good as Gold
+Tera Type: Water
+EVs: 248 HP / 32 SpA / 156 SpD / 72 Spe
+Modest Nature
+IVs: 0 Atk
+- Shadow Ball
+- Focus Blast
+- Recover
+- Nasty Plot
+
+Zamazenta @ Life Orb
+Ability: Dauntless Shield
+Tera Type: Fighting
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Close Combat
+- Crunch
+- Psychic Fangs
+- Ice Fang
+
+Great Tusk @ Booster Energy
+Ability: Protosynthesis
+Tera Type: Poison
+EVs: 248 HP / 4 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Headlong Rush
+- Head Smash
+- Bulk Up
+- Rapid Spin`
+  },
+  'torn-hatte-cind': {
+    name: 'Torn Hatte Cind',
+    description: 'Balanced team with Kyurem, Cinderace, and Tornadus-T',
+    team: `Kyurem @ Choice Specs
+Ability: Pressure
+Tera Type: Fairy
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Ice Beam
+- Draco Meteor
+- Freeze-Dry
+- Earth Power
+
+Cinderace @ Heavy-Duty Boots
+Ability: Libero
+Tera Type: Fire
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Pyro Ball
+- Gunk Shot
+- U-turn
+- Will-O-Wisp
+
+Tornadus-Therian @ Assault Vest
+Ability: Regenerator
+Tera Type: Poison
+EVs: 176 HP / 92 SpD / 240 Spe
+Timid Nature
+- Bleakwind Storm
+- Heat Wave
+- Knock Off
+- U-turn
+
+Hatterene (F) @ Leftovers
+Ability: Magic Bounce
+Tera Type: Flying
+EVs: 248 HP / 204 Def / 56 Spe
+Bold Nature
+- Psychic Noise
+- Draining Kiss
+- Pain Split
+- Nuzzle
+
+Great Tusk @ Rocky Helmet
+Ability: Protosynthesis
+Tera Type: Dragon
+EVs: 252 HP / 4 Def / 252 Spe
+Jolly Nature
+- Headlong Rush
+- Rapid Spin
+- Ice Spinner
+- Stealth Rock
+
+Kingambit (F) @ Leftovers
+Ability: Supreme Overlord
+Tera Type: Fairy
+EVs: 236 HP / 252 Atk / 20 Spe
+Adamant Nature
+- Kowtow Cleave
+- Tera Blast
+- Sucker Punch
+- Swords Dance`
+  },
+  'zamazenta-stall': {
+    name: 'Zamazenta Stall',
+    description: 'Defensive team with Iron Defense Zamazenta and hazard control',
+    team: `Zamazenta @ Leftovers
+Ability: Dauntless Shield
+Tera Type: Fire
+EVs: 136 HP / 120 Def / 252 Spe
+Jolly Nature
+- Iron Defense
+- Roar
+- Crunch
+- Body Press
+
+Kyurem @ Assault Vest
+Ability: Pressure
+Tera Type: Fairy
+EVs: 252 Def / 152 SpA / 104 Spe
+Modest Nature
+IVs: 0 Atk
+- Freeze-Dry
+- Ice Beam
+- Earth Power
+- Body Press
+
+Iron Treads @ Leftovers
+Ability: Quark Drive
+Tera Type: Ghost
+EVs: 252 HP / 52 Atk / 188 SpD / 16 Spe
+Adamant Nature
+- Stealth Rock
+- Rapid Spin
+- Ice Spinner
+- Earthquake
+
+Tornadus-Therian @ Heavy-Duty Boots
+Ability: Regenerator
+Tera Type: Steel
+EVs: 252 HP / 16 Def / 240 Spe
+Timid Nature
+- Knock Off
+- Taunt
+- Bleakwind Storm
+- Nasty Plot
+
+Pecharunt @ Covert Cloak
+Ability: Poison Puppeteer
+Tera Type: Water
+EVs: 252 HP / 96 Def / 160 Spe
+Bold Nature
+IVs: 0 Atk
+- Nasty Plot
+- Shadow Ball
+- Malignant Chain
+- Recover
+
+Ting-Lu @ Leftovers
+Ability: Vessel of Ruin
+Tera Type: Ghost
+EVs: 244 HP / 56 Def / 200 SpD / 8 Spe
+Impish Nature
+- Ruination
+- Spikes
+- Whirlwind
+- Earthquake`
+  },
+  'grasspon': {
+    name: 'Grasspon',
+    description: 'Offensive team featuring Ogerpon and strong sweepers',
+    team: `Primarina (M) @ Leftovers
+Ability: Liquid Voice
+Tera Type: Ghost
+EVs: 252 SpA / 4 SpD / 252 Spe
+Modest Nature
+IVs: 0 Atk
+- Psychic Noise
+- Moonblast
+- Whirlpool
+- Substitute
+
+Great Tusk @ Rocky Helmet
+Ability: Protosynthesis
+Tera Type: Fire
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Headlong Rush
+- Ice Spinner
+- Rapid Spin
+- Stealth Rock
+
+Enamorus (F) @ Choice Scarf
+Ability: Contrary
+Tera Type: Ground
+EVs: 252 SpA / 4 SpD / 252 Spe
+Modest Nature
+- Moonblast
+- Earth Power
+- Mystical Fire
+- Healing Wish
+
+Slowking-Galar (M) @ Assault Vest
+Ability: Regenerator
+Tera Type: Ice
+EVs: 248 HP / 252 Def / 8 SpD
+Bold Nature
+IVs: 0 Atk
+- Psychic Noise
+- Sludge Bomb
+- Flamethrower
+- Ice Beam
+
+Ogerpon (F) @ Choice Band
+Ability: Defiant
+Tera Type: Grass
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Ivy Cudgel
+- U-turn
+- Knock Off
+- Rock Tomb
+
+Kingambit (M) @ Leftovers
+Ability: Supreme Overlord
+Tera Type: Ghost
+EVs: 248 HP / 252 Atk / 8 Def
+Adamant Nature
+- Swords Dance
+- Kowtow Cleave
+- Iron Head
+- Sucker Punch`
+  },
+  'hydrapple-sand': {
+    name: 'Hydrapple Sand',
+    description: 'Sand team with Tyranitar, Excadrill, and Hydrapple',
+    team: `Hydrapple (M) @ Heavy-Duty Boots
+Ability: Regenerator
+Tera Type: Poison
+EVs: 208 HP / 172 Def / 88 SpA / 40 Spe
+Bold Nature
+IVs: 0 Atk
+- Nasty Plot
+- Giga Drain
+- Fickle Beam
+- Earth Power
+
+Tyranitar (F) @ Smooth Rock
+Ability: Sand Stream
+Tera Type: Flying
+EVs: 248 HP / 16 Def / 24 SpA / 216 SpD / 4 Spe
+Sassy Nature
+- Knock Off
+- Ice Beam
+- Thunder Wave
+- Stealth Rock
+
+Moltres @ Heavy-Duty Boots
+Ability: Flame Body
+Tera Type: Fairy
+EVs: 248 HP / 248 Def / 12 Spe
+Bold Nature
+- Flamethrower
+- U-turn
+- Roost
+- Roar
+
+Zamazenta @ Leftovers
+Ability: Dauntless Shield
+Tera Type: Fire
+EVs: 4 Atk / 252 Def / 252 Spe
+Jolly Nature
+- Body Press
+- Crunch
+- Iron Defense
+- Roar
+
+Slowking-Galar @ Assault Vest
+Ability: Regenerator
+Tera Type: Grass
+EVs: 248 HP / 184 Def / 28 SpA / 48 Spe
+Bold Nature
+IVs: 0 Atk
+- Psyshock
+- Sludge Bomb
+- Flamethrower
+- Ice Beam
+
+Excadrill (F) @ Air Balloon
+Ability: Sand Rush
+Tera Type: Fire
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Earthquake
+- Iron Head
+- Rapid Spin
+- Swords Dance`
+  },
+  'card-ting-fairy-nite': {
+    name: 'Card Ting, Fairy Nite',
+    description: 'Defensive core with Ting-Lu, Zamazenta, and Dragonite',
+    team: `Ting-Lu @ Red Card
+Ability: Vessel of Ruin
+Tera Type: Ghost
+EVs: 40 HP / 216 Def / 252 SpD
+Relaxed Nature
+IVs: 0 Atk / 9 Spe
+- Stealth Rock
+- Whirlwind
+- Ruination
+- Spikes
+
+Zamazenta @ Leftovers
+Ability: Dauntless Shield
+Tera Type: Fire
+EVs: 16 HP / 240 Def / 252 Spe
+Jolly Nature
+- Iron Defense
+- Body Press
+- Crunch
+- Roar
+
+Ogerpon-Wellspring (F) @ Wellspring Mask
+Ability: Water Absorb
+Tera Type: Water
+EVs: 244 Atk / 12 Def / 252 Spe
+Jolly Nature
+- Ivy Cudgel
+- Play Rough
+- Synthesis
+- Taunt
+
+Dragonite (F) @ Heavy-Duty Boots
+Ability: Multiscale
+Tera Type: Fairy
+EVs: 248 HP / 108 Def / 152 Spe
+Impish Nature
+- Dragon Dance
+- Tera Blast
+- Earthquake
+- Roost
+
+Gholdengo @ Choice Scarf
+Ability: Good as Gold
+Tera Type: Steel
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Make It Rain
+- Shadow Ball
+- Recover
+- Trick
+
+Iron Treads @ Air Balloon
+Ability: Quark Drive
+Tera Type: Ghost
+EVs: 100 Atk / 216 SpD / 192 Spe
+Jolly Nature
+- Earthquake
+- Ice Spinner
+- Knock Off
+- Rapid Spin`
+  }
+};
+
 // Bot configurations with descriptions and difficulty ratings
 const BOTS = {
   '1': {
@@ -574,31 +1106,55 @@ async function main() {
 
   console.log(`\n✓ Selected: ${selectedBot.name} (${selectedBot.difficulty})\n`);
 
-  // Select team
-  console.log('\nChoose your team:');
-  console.log('1. Offensive (Baxcalibur, Gholdengo, Great Tusk, Iron Valiant, Rotom-W, Kingambit)');
-  console.log('2. Defensive (Hatterene, Magnezone, Slowking, Frosmoth, Landorus-T, Zapdos-G)');
+  // Display all available teams
+  console.log('\n' + '='.repeat(80));
+  console.log('CHOOSE YOUR TEAM');
+  console.log('='.repeat(80));
+  console.log('\nAvailable Teams (from Smogon Sample Teams):\n');
 
-  const teamChoice = await new Promise((resolve) => {
-    rl.question('\nSelect team (1 or 2): ', (answer) => {
+  const teamKeys = Object.keys(SAMPLE_TEAMS);
+  teamKeys.forEach((key, index) => {
+    const team = SAMPLE_TEAMS[key];
+    console.log(`${index + 1}. ${team.name}`);
+    console.log(`   ${team.description}`);
+    console.log('');
+  });
+
+  // Select human team
+  const humanTeamChoice = await new Promise((resolve) => {
+    rl.question(`Select your team (1-${teamKeys.length}): `, (answer) => {
+      resolve(answer.trim());
+    });
+  });
+
+  const humanTeamIndex = parseInt(humanTeamChoice) - 1;
+  const humanTeamKey = teamKeys[humanTeamIndex] || teamKeys[0];
+  const humanTeamData = SAMPLE_TEAMS[humanTeamKey];
+
+  console.log(`\n✓ You selected: ${humanTeamData.name}`);
+
+  // Select bot team
+  console.log('\nChoose bot team:\n');
+  teamKeys.forEach((key, index) => {
+    const team = SAMPLE_TEAMS[key];
+    console.log(`${index + 1}. ${team.name}`);
+  });
+
+  const botTeamChoice = await new Promise((resolve) => {
+    rl.question(`\nSelect bot team (1-${teamKeys.length}): `, (answer) => {
       rl.close();
       resolve(answer.trim());
     });
   });
 
-  let humanTeam, botTeam;
+  const botTeamIndex = parseInt(botTeamChoice) - 1;
+  const botTeamKey = teamKeys[botTeamIndex] || teamKeys[1];
+  const botTeamData = SAMPLE_TEAMS[botTeamKey];
 
-  if (teamChoice === '1') {
-    humanTeam = TEAM_SPECS_GHOLDENGO;
-    botTeam = TEAM_ANTIMETA_LANDO;
-    console.log('\nYou chose: Offensive team');
-    console.log('Bot will use: Defensive team');
-  } else {
-    humanTeam = TEAM_ANTIMETA_LANDO;
-    botTeam = TEAM_SPECS_GHOLDENGO;
-    console.log('\nYou chose: Defensive team');
-    console.log('Bot will use: Offensive team');
-  }
+  console.log(`\n✓ Bot will use: ${botTeamData.name}\n`);
+
+  const humanTeam = humanTeamData.team;
+  const botTeam = botTeamData.team;
 
   const battle = new HumanVsBotBattle(humanTeam, botTeam, selectedBot.class, selectedBot.name);
   await battle.start();
