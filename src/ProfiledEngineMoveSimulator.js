@@ -189,6 +189,29 @@ class ProfiledEngineMoveSimulator {
     score -= ourStatused * 30;
     score += oppStatused * 30;
 
+    // Stat boosts (on active Pokemon)
+    if (state.ourActive && state.ourActive.boosts) {
+      const ourBoosts = state.ourActive.boosts;
+      score += (ourBoosts.atk || 0) * 15;
+      score += (ourBoosts.spa || 0) * 15;
+      score += (ourBoosts.def || 0) * 12;
+      score += (ourBoosts.spd || 0) * 12;
+      score += (ourBoosts.spe || 0) * 20;
+      score += (ourBoosts.accuracy || 0) * 8;
+      score += (ourBoosts.evasion || 0) * 10;
+    }
+
+    if (state.oppActive && state.oppActive.boosts) {
+      const oppBoosts = state.oppActive.boosts;
+      score -= (oppBoosts.atk || 0) * 15;
+      score -= (oppBoosts.spa || 0) * 15;
+      score -= (oppBoosts.def || 0) * 12;
+      score -= (oppBoosts.spd || 0) * 12;
+      score -= (oppBoosts.spe || 0) * 20;
+      score -= (oppBoosts.accuracy || 0) * 8;
+      score -= (oppBoosts.evasion || 0) * 10;
+    }
+
     if (state.oppSideConditions.stealthrock) score += 50;
     if (state.ourSideConditions.stealthrock) score -= 50;
     score += (state.oppSideConditions.spikes || 0) * 20;

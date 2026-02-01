@@ -123,6 +123,38 @@ class CachedEngineMoveSimulator {
     score -= ourStatused * 30;
     score += theirStatused * 30;
 
+    // Stat boosts (on active Pokemon)
+    const ourActive = us.active[0];
+    const theirActive = them.active[0];
+
+    if (ourActive && ourActive.boosts) {
+      const ourBoosts = ourActive.boosts;
+      score += (ourBoosts.atk || 0) * 15;
+      score += (ourBoosts.spa || 0) * 15;
+      score += (ourBoosts.def || 0) * 12;
+      score += (ourBoosts.spd || 0) * 12;
+      score += (ourBoosts.spe || 0) * 20;
+      score += (ourBoosts.accuracy || 0) * 8;
+      score += (ourBoosts.evasion || 0) * 10;
+    }
+
+    if (theirActive && theirActive.boosts) {
+      const theirBoosts = theirActive.boosts;
+      score -= (theirBoosts.atk || 0) * 15;
+      score -= (theirBoosts.spa || 0) * 15;
+      score -= (theirBoosts.def || 0) * 12;
+      score -= (theirBoosts.spd || 0) * 12;
+      score -= (theirBoosts.spe || 0) * 20;
+      score -= (theirBoosts.accuracy || 0) * 8;
+      score -= (theirBoosts.evasion || 0) * 10;
+    }
+
+    // Hazards
+    if (them.sideConditions?.stealthrock) score += 50;
+    if (us.sideConditions?.stealthrock) score -= 50;
+    score += (them.sideConditions?.spikes?.layers || 0) * 20;
+    score -= (us.sideConditions?.spikes?.layers || 0) * 20;
+
     return score;
   }
 
