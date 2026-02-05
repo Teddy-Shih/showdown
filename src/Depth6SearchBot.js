@@ -8,18 +8,24 @@ const OptimizedDepth4Bot = require('./OptimizedDepth4Bot');
  *
  * Expected performance:
  * - Without optimizations: ~30+ seconds per turn (impractical)
- * - With optimizations: ~1-3 seconds per turn (usable)
+ * - With optimizations: ~2-5 seconds per turn (usable)
  *
  * Performance estimates:
- * - Nodes: ~15,000-30,000 (vs ~100,000+ without optimizations)
+ * - Nodes: ~20,000-50,000 (with 4 moves considered)
  * - TT hit rate: 30-50%
  * - Alpha-beta prunes: 40-60% of branches
  *
  * Why depth 6 is valuable:
  * - Sees 3 full turns ahead (vs 2 turns at depth 4)
  * - Can plan 2-turn KO sequences
- * - Better switch decisions
+ * - Better switch decisions (now uses minimax for switches)
  * - More accurate position evaluation
+ * - Considers all 4 moves (no aggressive pruning)
+ *
+ * Enhancements over previous version:
+ * - Sophisticated switching logic using minimax evaluation
+ * - Considers all 4 moves instead of just top 3
+ * - Improved stat boost evaluation with non-linear scaling
  */
 class Depth6SearchBot extends OptimizedDepth4Bot {
   constructor(playerName, options = {}) {
@@ -28,7 +34,7 @@ class Depth6SearchBot extends OptimizedDepth4Bot {
       ...options,
       maxDepth: 6,
       maxTableSize: options.maxTableSize || 50000, // Larger TT for depth 6
-      maxMovesToConsider: options.maxMovesToConsider || 3 // Still limit branching
+      maxMovesToConsider: options.maxMovesToConsider || 4 // Consider all 4 moves
     };
 
     super(playerName, depth6Options);

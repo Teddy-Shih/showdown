@@ -381,6 +381,80 @@ class TranspositionMoveSimulator {
     return conditions;
   }
 
+  /**
+   * Evaluate stat boosts with non-linear scaling
+   *
+   * Key insights:
+   * 1. Each boost stage has increasing marginal value (exponential growth)
+   * 2. Combined offensive + speed boosts create sweep potential
+   * 3. +3 or higher boosts are extremely dangerous
+   *
+   * Formula: base_value * (1.5 ^ abs(boost_stage))
+   * This captures the exponential damage increase from stat boosts
+   *
+   * Additional bonus for "sweep setup":
+   * - High offensive stat + high speed = unstoppable sweeper
+   * - We add extra points for this combination
+   */
+  evaluateBoosts(boosts) {
+    if (!boosts) return 0;
+
+    let score = 0;
+
+    // Non-linear evaluation: each stage worth more than the last
+    // Base values represent importance of each stat
+    const baseValues = {
+      atk: 18,  // Offensive stats are critical
+      spa: 18,
+      spe: 25,  // Speed is most important (determines who moves first)
+      def: 14,  // Defensive stats less impactful
+      spd: 14,
+      accuracy: 10,
+      evasion: 12
+    };
+
+    // Exponential scaling: 1.5^n growth per stage
+    for (const [stat, baseValue] of Object.entries(baseValues)) {
+      const boost = boosts[stat] || 0;
+      if (boost !== 0) {
+        // Use exponential scaling: value * (1.5^boost)
+        const sign = boost > 0 ? 1 : -1;
+        const magnitude = Math.abs(boost);
+        const exponentialValue = baseValue * Math.pow(1.5, magnitude);
+        score += sign * exponentialValue;
+      }
+    }
+
+    // SWEEP POTENTIAL BONUS
+    // If Pokemon has both offensive AND speed boosts, it's a setup sweeper
+    // This is extremely dangerous (e.g., +3 Quiver Dance Volcarona)
+    const offensiveBoost = Math.max(boosts.atk || 0, boosts.spa || 0);
+    const speedBoost = boosts.spe || 0;
+
+    if (offensiveBoost >= 2 && speedBoost >= 2) {
+      // High setup: likely can sweep remaining team
+      // Add exponential bonus based on total setup
+      const totalSetup = offensiveBoost + speedBoost;
+      const sweepBonus = 50 * Math.pow(1.8, totalSetup - 4);
+      score += sweepBonus;
+    } else if (offensiveBoost >= 1 && speedBoost >= 1) {
+      // Moderate setup: dangerous but not guaranteed sweep
+      const totalSetup = offensiveBoost + speedBoost;
+      const sweepBonus = 20 * Math.pow(1.5, totalSetup - 2);
+      score += sweepBonus;
+    }
+
+    // DEFENSIVE WALL BONUS
+    // Multiple defensive boosts make Pokemon very hard to KO
+    const defensiveBoost = (boosts.def || 0) + (boosts.spd || 0);
+    if (defensiveBoost >= 3) {
+      const wallBonus = 30 * Math.pow(1.4, defensiveBoost - 3);
+      score += wallBonus;
+    }
+
+    return score;
+  }
+
   evaluateState(battle, player = 'p1') {
     const start = performance.now();
 
@@ -420,27 +494,14 @@ class TranspositionMoveSimulator {
     score -= ourStatused * 30;
     score += oppStatused * 30;
 
-    // Stat boosts (on active Pokemon only)
+    // Stat boosts (on active Pokemon only) - NON-LINEAR SCALING
+    // Stacked boosts become exponentially more dangerous (sweep potential)
     if (state.ourActive && state.ourActive.boosts) {
-      const ourBoosts = state.ourActive.boosts;
-      score += (ourBoosts.atk || 0) * 15;
-      score += (ourBoosts.spa || 0) * 15;
-      score += (ourBoosts.def || 0) * 12;
-      score += (ourBoosts.spd || 0) * 12;
-      score += (ourBoosts.spe || 0) * 20;
-      score += (ourBoosts.accuracy || 0) * 8;
-      score += (ourBoosts.evasion || 0) * 10;
+      score += this.evaluateBoosts(state.ourActive.boosts);
     }
 
     if (state.oppActive && state.oppActive.boosts) {
-      const oppBoosts = state.oppActive.boosts;
-      score -= (oppBoosts.atk || 0) * 15;
-      score -= (oppBoosts.spa || 0) * 15;
-      score -= (oppBoosts.def || 0) * 12;
-      score -= (oppBoosts.spd || 0) * 12;
-      score -= (oppBoosts.spe || 0) * 20;
-      score -= (oppBoosts.accuracy || 0) * 8;
-      score -= (oppBoosts.evasion || 0) * 10;
+      score -= this.evaluateBoosts(state.oppActive.boosts);
     }
 
     // Hazards

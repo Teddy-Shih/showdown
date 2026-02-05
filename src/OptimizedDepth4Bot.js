@@ -315,11 +315,121 @@ class OptimizedDepth4Bot {
   }
 
   chooseBestSwitch(request) {
-    const alivePokemon = request.side.pokemon
-      .map((p, idx) => ({ pokemon: p, slot: idx + 1 }))
-      .filter(({ pokemon }) => !pokemon.active && pokemon.condition !== '0 fnt');
+    if (!this.battleInstance) {
+      // Fallback to simple logic if no battle instance
+      const alivePokemon = request.side.pokemon
+        .map((p, idx) => ({ pokemon: p, slot: idx + 1 }))
+        .filter(({ pokemon }) => !pokemon.active && pokemon.condition !== '0 fnt');
 
-    return alivePokemon.length > 0 ? `switch ${alivePokemon[0].slot}` : 'default';
+      return alivePokemon.length > 0 ? `switch ${alivePokemon[0].slot}` : 'default';
+    }
+
+    // Use minimax search to find best switch
+    const switches = this.simulator.getAvailableSwitches(this.battleInstance, this.playerSide);
+
+    if (switches.length === 0) {
+      return 'default';
+    }
+
+    if (switches.length === 1) {
+      return `switch ${switches[0]}`;
+    }
+
+    // Evaluate each switch option using limited-depth minimax
+    let bestSwitch = switches[0];
+    let bestScore = -Infinity;
+    const switchSearchDepth = Math.min(2, this.maxDepth - 1); // Shallower search for switches
+
+    if (this.verbose) {
+      console.log(`[${this.name}] Evaluating ${switches.length} switch options...`);
+    }
+
+    for (const switchSlot of switches) {
+      const switchChoice = `switch ${switchSlot}`;
+
+      try {
+        this.nodesThisPath = 0;
+
+        // Simulate the switch and evaluate resulting position
+        // We need to estimate opponent's move - try most damaging move
+        const oppMoves = this.simulator.getAvailableMoves(this.battleInstance,
+          this.playerSide === 'p1' ? 'p2' : 'p1');
+
+        if (oppMoves.length === 0) {
+          // If opponent has no moves, just evaluate the switch directly
+          const p1Choice = this.playerSide === 'p1' ? switchChoice : 'move 1';
+          const p2Choice = this.playerSide === 'p1' ? 'move 1' : switchChoice;
+
+          const newBattle = this.simulator.simulateTurn(this.battleInstance, p1Choice, p2Choice);
+          const score = this.simulator.evaluateState(newBattle, this.playerSide);
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestSwitch = switchSlot;
+          }
+          continue;
+        }
+
+        // Order opponent moves to try most threatening first
+        let orderedOppMoves = oppMoves;
+        if (this.useMoveOrdering) {
+          orderedOppMoves = this.simulator.orderMoves(
+            this.battleInstance,
+            this.playerSide === 'p1' ? 'p2' : 'p1',
+            oppMoves
+          );
+        }
+
+        // Evaluate against top 3 opponent moves (pessimistic assumption)
+        const movesToConsider = Math.min(3, orderedOppMoves.length);
+        let minScoreAgainstOpp = Infinity;
+
+        for (let i = 0; i < movesToConsider; i++) {
+          const oppMoveId = orderedOppMoves[i];
+          const oppSide = this.battleInstance[this.playerSide === 'p1' ? 'p2' : 'p1'];
+          const oppActive = oppSide.active[0];
+          const oppSlot = oppActive.moveSlots.findIndex(s => s.id === oppMoveId);
+
+          if (oppSlot === -1) continue;
+
+          const oppChoice = `move ${oppSlot + 1}`;
+          const p1Choice = this.playerSide === 'p1' ? switchChoice : oppChoice;
+          const p2Choice = this.playerSide === 'p1' ? oppChoice : switchChoice;
+
+          try {
+            const newBattle = this.simulator.simulateTurn(this.battleInstance, p1Choice, p2Choice);
+
+            // Run shallow minimax from the switched position
+            const score = this.minimax(newBattle, oppChoice, switchSearchDepth, -Infinity, Infinity, true);
+            minScoreAgainstOpp = Math.min(minScoreAgainstOpp, score);
+          } catch (error) {
+            // If simulation fails, assign penalty
+            minScoreAgainstOpp = Math.min(minScoreAgainstOpp, -500);
+          }
+        }
+
+        if (this.verbose) {
+          console.log(`  switch ${switchSlot}: score ${minScoreAgainstOpp.toFixed(1)}`);
+        }
+
+        // Use the worst-case score (pessimistic)
+        if (minScoreAgainstOpp > bestScore) {
+          bestScore = minScoreAgainstOpp;
+          bestSwitch = switchSlot;
+        }
+
+      } catch (error) {
+        if (this.verbose) {
+          console.log(`[${this.name}] Error evaluating switch ${switchSlot}: ${error.message}`);
+        }
+      }
+    }
+
+    if (this.verbose) {
+      console.log(`[${this.name}] Best switch: ${bestSwitch} (score: ${bestScore.toFixed(1)})`);
+    }
+
+    return `switch ${bestSwitch}`;
   }
 
   fallbackChoice(request) {
