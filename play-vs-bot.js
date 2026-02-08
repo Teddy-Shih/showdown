@@ -9,6 +9,7 @@ const SmartBot = require('./src/SmartBot');
 const MinimaxBot = require('./src/MinimaxBot');
 const TypeAwareBot = require('./src/TypeAwareBot');
 const ImprovedTypeAwareBot = require('./src/ImprovedTypeAwareBot');
+const Depth6SearchBot = require('./src/Depth6SearchBot');
 
 const { TEAM_SPECS_GHOLDENGO, TEAM_ANTIMETA_LANDO } = require('./data/ou-teams');
 
@@ -589,10 +590,18 @@ const BOTS = {
   '6': {
     name: 'ImprovedTypeAwareBot',
     class: ImprovedTypeAwareBot,
-    description: 'The strongest bot! TypeAwareBot with optimized switching and wall detection.',
+    description: 'TypeAwareBot with optimized switching and wall detection.',
     difficulty: 'Expert',
     strength: '★★★★★★',
     features: ['Optimized switching', 'Wall detection', 'Aggressive play', 'Team preservation']
+  },
+  '7': {
+    name: 'Depth6SearchBot',
+    class: Depth6SearchBot,
+    description: 'Deepest search bot! 6-ply minimax with transposition tables and move ordering.',
+    difficulty: 'Master',
+    strength: '★★★★★★★',
+    features: ['6-ply minimax (3 full turns)', 'Transposition tables', 'Move ordering', 'Alpha-beta pruning', '~2-5s per turn']
   }
 };
 
@@ -1097,7 +1106,7 @@ async function main() {
 
   // Select bot
   const botChoice = await new Promise((resolve) => {
-    rl.question('Select bot opponent (1-6): ', (answer) => {
+    rl.question('Select bot opponent (1-7): ', (answer) => {
       resolve(answer.trim());
     });
   });
