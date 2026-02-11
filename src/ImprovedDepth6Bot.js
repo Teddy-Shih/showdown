@@ -29,13 +29,13 @@ class ImprovedDepth6Bot extends Depth6SearchBot {
     super(playerName, options);
 
     // Time-bounded search settings
-    this.timeLimit = options.timeLimit || 3000; // 3 seconds default
+    this.timeLimit = options.timeLimit || 4000; // 4 seconds default
     this.searchStartTime = 0;
     this.timeoutReached = false;
 
     // Opponent prediction settings
     this.useOpponentPrediction = options.useOpponentPrediction !== false;
-    this.opponentMovesConsider = options.opponentMovesConsider || 2; // Consider top 2 opponent moves
+    this.opponentMovesConsider = options.opponentMovesConsider || 3; // Consider top 3 opponent moves
 
     // Additional stats
     this.improvedStats = {

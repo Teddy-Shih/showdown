@@ -629,6 +629,8 @@ class HumanVsBotBattle {
 
     this.pendingRequest = null;
     this.pendingResolve = null;
+    this.battleStream = null;
+    this.botInitialized = false;
 
     this.rl = readline.createInterface({
       input: process.stdin,
@@ -647,7 +649,9 @@ class HumanVsBotBattle {
     console.log(`Bot is Player 2 (p2) - ${this.botName}`);
     console.log('\nStarting battle...\n');
 
-    const streams = BattleStreams.getPlayerStreams(new BattleStreams.BattleStream());
+    // Keep reference to the BattleStream to access battle instance
+    const battleStream = new BattleStreams.BattleStream();
+    const streams = BattleStreams.getPlayerStreams(battleStream);
 
     const team1Packed = Teams.pack(Teams.import(this.humanTeam));
     const team2Packed = Teams.pack(Teams.import(this.botTeam));
@@ -659,6 +663,10 @@ class HumanVsBotBattle {
     void streams.omniscient.write(`>start ${JSON.stringify(spec)}`);
     void streams.omniscient.write(`>player p1 ${JSON.stringify(p1spec)}`);
     void streams.omniscient.write(`>player p2 ${JSON.stringify(p2spec)}`);
+
+    // Store battleStream reference for later access
+    this.battleStream = battleStream;
+    this.botInitialized = false;
 
     // Process both players and omniscient stream concurrently
     await Promise.all([
@@ -699,6 +707,13 @@ class HumanVsBotBattle {
           const requestData = line.slice('|request|'.length);
           if (requestData) {
             const request = JSON.parse(requestData);
+
+            // Initialize bot with battle instance on first request
+            if (!this.botInitialized && this.battleStream.battle && typeof this.bot.setBattleInstance === 'function') {
+              this.bot.setBattleInstance(this.battleStream.battle, 'p2');
+              this.botInitialized = true;
+              console.log('[System] Bot initialized with battle instance - minimax search enabled\n');
+            }
 
             if (!request.wait) {
               const choice = this.bot.chooseMove(request);
