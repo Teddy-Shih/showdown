@@ -36,6 +36,7 @@ class TranspositionMoveSimulator {
     };
 
     this.gen = Generations.get(9);
+    this.dex = Dex;
   }
 
   /**
@@ -455,6 +456,85 @@ class TranspositionMoveSimulator {
     return score;
   }
 
+  /**
+   * Evaluate status conditions with differentiated weights.
+   * Different statuses have very different competitive impacts:
+   * - Sleep: most debilitating (no actions for 1-3 turns)
+   * - Freeze: permanent until thawed (rare but devastating)
+   * - Burn: halves physical attack + chip damage
+   * - Toxic: exponentially increasing damage
+   * - Paralysis: 25% immobilization + speed cut
+   * - Poison: minor chip damage
+   */
+  evaluateStatusScore(team) {
+    let score = 0;
+    for (const p of team) {
+      if (!p.status || p.hp === 0) continue;
+      switch (p.status) {
+        case 'slp': score -= 70; break;  // Sleep is devastating
+        case 'frz': score -= 80; break;  // Freeze even worse (rare but permanent)
+        case 'brn': score -= 50; break;  // Burn halves physical attack + residual
+        case 'tox': score -= 55; break;  // Toxic accumulates fast
+        case 'par': score -= 45; break;  // Paralysis cuts speed + 25% chance of no move
+        case 'psn': score -= 30; break;  // Regular poison is milder
+        default:    score -= 20; break;
+      }
+    }
+    return score;
+  }
+
+  /**
+   * Evaluate type matchup of the active Pokemon pair.
+   * A favorable matchup (we resist their moves, they don't resist ours)
+   * provides a significant strategic advantage.
+   */
+  evaluateTypeMatchup(ourActive, oppActive) {
+    if (!ourActive || !oppActive) return 0;
+    let score = 0;
+
+    try {
+      const ourTypes = ourActive.types || [];
+      const oppTypes = oppActive.types || [];
+
+      // Check how well our type resists opponent's types
+      // (i.e., how much damage we take from STAB moves)
+      let ourResistScore = 0;
+      for (const oppType of oppTypes) {
+        let minEff = Infinity;
+        for (const ourType of ourTypes) {
+          const eff = this.dex.types.get(oppType)?.effectiveness?.[ourType];
+          if (eff !== undefined) {
+            minEff = Math.min(minEff, eff);
+          }
+        }
+        // Reward immunity/resistance, penalize weakness
+        if (minEff === 0) ourResistScore += 40;        // Immune
+        else if (minEff < 1) ourResistScore += 20;     // Resist
+        else if (minEff > 1) ourResistScore -= 25;     // Weak
+      }
+
+      // Check how well our types hit opponent
+      let ourOffenseScore = 0;
+      for (const ourType of ourTypes) {
+        let maxEff = 0;
+        for (const oppType of oppTypes) {
+          const eff = this.dex.types.get(ourType)?.effectiveness?.[oppType];
+          if (eff !== undefined) {
+            maxEff = Math.max(maxEff, eff);
+          }
+        }
+        if (maxEff === 0) ourOffenseScore -= 10;       // Immune (we can't hit)
+        else if (maxEff >= 2) ourOffenseScore += 20;   // Super effective STAB coverage
+      }
+
+      score = ourResistScore + ourOffenseScore;
+    } catch (e) {
+      // Ignore errors in type lookup
+    }
+
+    return score;
+  }
+
   evaluateState(battle, player = 'p1') {
     const start = performance.now();
 
@@ -474,7 +554,8 @@ class TranspositionMoveSimulator {
 
     let score = 0;
 
-    // HP advantage
+    // --- HP ADVANTAGE (weight: 100) ---
+    // Total team HP percentage differential
     const ourTotalHP = state.ourTeam.reduce((sum, p) => sum + p.hp, 0);
     const ourTotalMaxHP = state.ourTeam.reduce((sum, p) => sum + p.maxhp, 0);
     const oppTotalHP = state.oppTeam.reduce((sum, p) => sum + p.hp, 0);
@@ -483,32 +564,75 @@ class TranspositionMoveSimulator {
     score += (ourTotalHP / ourTotalMaxHP) * 100;
     score -= (oppTotalHP / oppTotalMaxHP) * 100;
 
-    // Pokemon count (most important)
+    // --- ACTIVE POKEMON HP (weight: 60) ---
+    // Active Pokemon HP matters more - if it faints we lose momentum
+    if (state.ourActive && state.ourActive.maxhp > 0) {
+      const ourActiveHP = state.ourActive.hp / state.ourActive.maxhp;
+      score += ourActiveHP * 60;
+      // Bonus for being in the "safe" zone (>50% HP)
+      if (ourActiveHP > 0.5) score += 15;
+    }
+    if (state.oppActive && state.oppActive.maxhp > 0) {
+      const oppActiveHP = state.oppActive.hp / state.oppActive.maxhp;
+      score -= oppActiveHP * 60;
+      // Bonus for getting opponent into KO range (<25%)
+      if (oppActiveHP < 0.25) score += 20;
+    }
+
+    // --- POKEMON COUNT (most important, weight: 200) ---
     const ourAlive = state.ourTeam.filter(p => p.hp > 0).length;
     const oppAlive = state.oppTeam.filter(p => p.hp > 0).length;
     score += (ourAlive - oppAlive) * 200;
 
-    // Status conditions
-    const ourStatused = state.ourTeam.filter(p => p.status && p.hp > 0).length;
-    const oppStatused = state.oppTeam.filter(p => p.status && p.hp > 0).length;
-    score -= ourStatused * 30;
-    score += oppStatused * 30;
+    // --- STATUS CONDITIONS (differentiated weights) ---
+    score += this.evaluateStatusScore(state.ourTeam);       // negative for our statuses
+    score -= this.evaluateStatusScore(state.oppTeam);       // positive (bad for them)
 
-    // Stat boosts (on active Pokemon only) - NON-LINEAR SCALING
-    // Stacked boosts become exponentially more dangerous (sweep potential)
+    // --- STAT BOOSTS (non-linear scaling) ---
     if (state.ourActive && state.ourActive.boosts) {
       score += this.evaluateBoosts(state.ourActive.boosts);
     }
-
     if (state.oppActive && state.oppActive.boosts) {
       score -= this.evaluateBoosts(state.oppActive.boosts);
     }
 
-    // Hazards
-    if (state.oppSideConditions.stealthrock) score += 50;
-    if (state.ourSideConditions.stealthrock) score -= 50;
-    score += (state.oppSideConditions.spikes || 0) * 20;
-    score -= (state.ourSideConditions.spikes || 0) * 20;
+    // --- TYPE MATCHUP BONUS ---
+    score += this.evaluateTypeMatchup(state.ourActive, state.oppActive) * 0.5;
+
+    // --- HAZARDS (asymmetric: SR hurts entry, spikes add up) ---
+    // Stealth Rock: 12.5-50% damage on switch-in depending on typing
+    if (state.oppSideConditions.stealthrock) score += 55;
+    if (state.ourSideConditions.stealthrock) score -= 55;
+    score += (state.oppSideConditions.spikes || 0) * 25;
+    score -= (state.ourSideConditions.spikes || 0) * 25;
+    score += (state.oppSideConditions.toxicspikes || 0) * 20;
+    score -= (state.ourSideConditions.toxicspikes || 0) * 20;
+
+    // Screens reduce damage for 5 turns - significant defensive value
+    if (state.ourSideConditions.reflect) score += 30;
+    if (state.ourSideConditions.lightscreen) score += 30;
+    if (state.oppSideConditions.reflect) score -= 30;
+    if (state.oppSideConditions.lightscreen) score -= 30;
+
+    // --- WEATHER/TERRAIN BONUS ---
+    // Weather advantages based on team typing (simplified)
+    const weather = state.weather;
+    if (weather === 'sunnyday') {
+      // Sun: fire types benefit, water/ice hurt
+      const ourFireTypes = state.ourTeam.filter(p => p.types && p.types.includes('Fire') && p.hp > 0).length;
+      const oppFireTypes = state.oppTeam.filter(p => p.types && p.types.includes('Fire') && p.hp > 0).length;
+      score += (ourFireTypes - oppFireTypes) * 15;
+    } else if (weather === 'raindance') {
+      // Rain: water types benefit
+      const ourWaterTypes = state.ourTeam.filter(p => p.types && p.types.includes('Water') && p.hp > 0).length;
+      const oppWaterTypes = state.oppTeam.filter(p => p.types && p.types.includes('Water') && p.hp > 0).length;
+      score += (ourWaterTypes - oppWaterTypes) * 15;
+    } else if (weather === 'sandstorm') {
+      // Sand: damages non-immune types, buffs Rock SpDef
+      const ourSandImmune = state.ourTeam.filter(p => p.types && (p.types.includes('Rock') || p.types.includes('Ground') || p.types.includes('Steel')) && p.hp > 0).length;
+      const oppSandImmune = state.oppTeam.filter(p => p.types && (p.types.includes('Rock') || p.types.includes('Ground') || p.types.includes('Steel')) && p.hp > 0).length;
+      score += (ourSandImmune - oppSandImmune) * 10;
+    }
 
     this.stats.evaluateTime += performance.now() - start;
     this.stats.evaluateCalls++;
