@@ -1,113 +1,22 @@
 const OptimizedDepth4Bot = require('./OptimizedDepth4Bot');
 
 /**
- * Depth6SearchBot - 6-ply minimax search with transposition tables and move ordering
+ * Depth6SearchBot - OptimizedDepth4Bot searching up to 6 plies (3 turns).
  *
- * This extends OptimizedDepth4Bot but searches to depth 6 instead of 4.
- * With transposition tables and move ordering, depth 6 becomes practical:
- *
- * Expected performance:
- * - Without optimizations: ~30+ seconds per turn (impractical)
- * - With optimizations: ~2-5 seconds per turn (usable)
- *
- * Performance estimates:
- * - Nodes: ~20,000-50,000 (with 4 moves considered)
- * - TT hit rate: 30-50%
- * - Alpha-beta prunes: 40-60% of branches
- *
- * Why depth 6 is valuable:
- * - Sees 3 full turns ahead (vs 2 turns at depth 4)
- * - Can plan 2-turn KO sequences
- * - Better switch decisions (now uses minimax for switches)
- * - More accurate position evaluation
- * - Considers all 4 moves (no aggressive pruning)
- *
- * Enhancements over previous version:
- * - Sophisticated switching logic using minimax evaluation
- * - Considers all 4 moves instead of just top 3
- * - Improved stat boost evaluation with non-linear scaling
+ * Each simulated turn costs a few milliseconds (Battle clone + resolution), so
+ * a full 3-turn search does not always fit. The search deepens one turn at a
+ * time and stops at the time limit (default 4s), keeping the deepest
+ * completed result.
  */
 class Depth6SearchBot extends OptimizedDepth4Bot {
   constructor(playerName, options = {}) {
-    // Set default depth to 6
-    const depth6Options = {
+    super(playerName, {
       ...options,
       maxDepth: 6,
       maxTableSize: options.maxTableSize || 50000, // Larger TT for depth 6
-      maxMovesToConsider: options.maxMovesToConsider || 4 // Consider all 4 moves
-    };
-
-    super(playerName, depth6Options);
-
-    // Additional stats specific to depth 6
-    this.depth6Stats = {
-      avgBranchingFactor: 0,
-      maxDepthReached: 0
-    };
-  }
-
-  searchBestMove() {
-    // Track max depth reached
-    this.currentMaxDepth = 0;
-
-    const result = super.searchBestMove();
-
-    this.depth6Stats.maxDepthReached = Math.max(
-      this.depth6Stats.maxDepthReached,
-      this.currentMaxDepth
-    );
-
-    return result;
-  }
-
-  minimax(battle, lastChoice, depth, alpha, beta, maximizing) {
-    // Track max depth for stats
-    const depthReached = this.maxDepth - depth;
-    if (depthReached > this.currentMaxDepth) {
-      this.currentMaxDepth = depthReached;
-    }
-
-    // Call parent minimax
-    return super.minimax(battle, lastChoice, depth, alpha, beta, maximizing);
-  }
-
-  printStats() {
-    const stats = this.getStats();
-
-    console.log('\n' + '='.repeat(70));
-    console.log(`DEPTH 6 SEARCH BOT STATISTICS - ${this.name}`);
-    console.log('='.repeat(70));
-
-    console.log('\nSearch Depth Information:');
-    console.log(`  Target depth:           ${this.maxDepth}`);
-    console.log(`  Max depth reached:      ${this.depth6Stats.maxDepthReached}`);
-    console.log(`  Moves considered:       ${this.maxMovesToConsider} per side`);
-
-    console.log('\nOptimizations Enabled:');
-    console.log(`  Transposition tables:   ${this.useTranspositionTable ? 'YES' : 'NO'}`);
-    console.log(`  Move ordering:          ${this.useMoveOrdering ? 'YES' : 'NO'}`);
-    console.log(`  TT size limit:          ${this.simulator.maxTableSize}`);
-
-    console.log('\nSearch Statistics:');
-    console.log(`  Total searches:         ${stats.search.searchCalls}`);
-    console.log(`  Total search time:      ${stats.search.totalSearchTime.toFixed(2)}ms`);
-    console.log(`  Avg search time:        ${stats.search.avgSearchTime.toFixed(2)}ms`);
-    console.log(`  Total nodes explored:   ${stats.search.nodesExplored}`);
-    console.log(`  Avg nodes per search:   ${stats.search.avgNodesExplored.toFixed(1)}`);
-    console.log(`  TT cutoffs:             ${stats.search.ttCutoffs}`);
-    console.log(`  Alpha-beta prunes:      ${stats.search.alphaBetaPrunes}`);
-
-    // Calculate efficiency metrics
-    const simStats = stats.simulator;
-    const ttTotal = simStats.ttHits + simStats.ttMisses;
-    const pruneRate = stats.search.alphaBetaPrunes / stats.search.nodesExplored;
-
-    console.log('\nEfficiency Metrics:');
-    console.log(`  TT hit rate:            ${simStats.ttHitRate}`);
-    console.log(`  Prune rate:             ${(pruneRate * 100).toFixed(1)}%`);
-    console.log(`  Nodes per second:       ${(stats.search.nodesExplored / (stats.search.totalSearchTime / 1000)).toFixed(0)}`);
-
-    this.simulator.printStats();
+      maxMovesToConsider: options.maxMovesToConsider || 4,
+      timeLimit: options.timeLimit || 4000
+    });
   }
 }
 

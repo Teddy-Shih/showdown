@@ -9,8 +9,10 @@ Teams.setGeneratorFactory(TeamGenerators);
  * Unlike OUBattleSimulator (which uses streams), this gives bots direct
  * access to the Battle instance, enabling them to run tree search.
  *
- * This is specifically designed for EngineTreeSearchBot and similar AIs
- * that need to simulate future states.
+ * The loop is driven by each side's pending request (side.requestState):
+ * 'move', 'switch' (fainted or mid-turn switch such as U-turn), 'teampreview',
+ * or '' (waiting). Only sides with a pending request are asked for a choice,
+ * and Battle#choose commits the turn once every pending side has chosen.
  */
 class EngineBattleSimulator {
   constructor(bot1, bot2, team1, team2, options = {}) {
@@ -21,30 +23,31 @@ class EngineBattleSimulator {
     this.formatId = options.formatid || 'gen9customgame';
     this.verbose = options.verbose || false;
     this.maxTurns = options.maxTurns || 100;
+    this.seed = options.seed; // [n, n, n, n] for reproducible battles
     this.battle = null;
   }
 
   /**
-   * Run the battle to completion
+   * Run the battle to completion (or until maxTurns)
    */
   async runBattle() {
+    const team1Packed = Teams.pack(Teams.import(this.team1));
+    const team2Packed = Teams.pack(Teams.import(this.team2));
+
+    const battleOptions = {
+      formatid: this.formatId,
+      p1: { name: this.bot1.name, team: team1Packed },
+      p2: { name: this.bot2.name, team: team2Packed }
+    };
+    if (this.seed) battleOptions.seed = this.seed;
+    this.battle = new Battle(battleOptions);
+
     if (this.verbose) {
       console.log('='.repeat(60));
       console.log(`BATTLE: ${this.bot1.name} vs ${this.bot2.name}`);
       console.log(`Format: ${this.formatId}`);
       console.log('='.repeat(60));
     }
-
-    // Pack teams
-    const team1Packed = Teams.pack(Teams.import(this.team1));
-    const team2Packed = Teams.pack(Teams.import(this.team2));
-
-    // Create battle
-    this.battle = new Battle({
-      formatid: this.formatId,
-      p1: { name: this.bot1.name, team: team1Packed },
-      p2: { name: this.bot2.name, team: team2Packed }
-    });
 
     // Give bots access to battle instance
     if (typeof this.bot1.setBattleInstance === 'function') {
@@ -54,150 +57,125 @@ class EngineBattleSimulator {
       this.bot2.setBattleInstance(this.battle, 'p2');
     }
 
-    // Make team preview choices
-    const p1TeamPreview = this.getTeamPreviewChoice(this.bot1);
-    const p2TeamPreview = this.getTeamPreviewChoice(this.bot2);
+    const stats = {
+      invalidChoices: 0,
+      botErrors: 0,
+      decisions: { p1: 0, p2: 0 },
+      decisionMs: { p1: 0, p2: 0 }
+    };
+    let error = null;
+    let lastLoggedTurn = 0;
+    // Each turn needs at most a handful of request rounds (move + switches)
+    const maxSteps = this.maxTurns * 20;
+    let steps = 0;
 
-    this.battle.makeChoices(p1TeamPreview, p2TeamPreview);
-
-    if (this.verbose) {
-      console.log('Team preview complete');
-      console.log(`${this.bot1.name}: ${this.battle.p1.active[0].name}`);
-      console.log(`${this.bot2.name}: ${this.battle.p2.active[0].name}`);
-    }
-
-    // Battle loop
-    let turnCount = 0;
-    while (!this.battle.ended && turnCount < this.maxTurns) {
-      turnCount++;
-
-      if (this.verbose) {
-        console.log(`\n--- Turn ${turnCount} ---`);
-        console.log(`${this.bot1.name}: ${this.battle.p1.active[0]?.name} (${this.battle.p1.active[0]?.hp}/${this.battle.p1.active[0]?.maxhp})`);
-        console.log(`${this.bot2.name}: ${this.battle.p2.active[0]?.name} (${this.battle.p2.active[0]?.hp}/${this.battle.p2.active[0]?.maxhp})`);
-      }
-
-      // Get choices from bots
-      const p1Request = this.createRequest(this.battle.p1, this.battle);
-      const p2Request = this.createRequest(this.battle.p2, this.battle);
-
-      const p1Choice = this.bot1.chooseMove(p1Request);
-      const p2Choice = this.bot2.chooseMove(p2Request);
-
-      if (this.verbose) {
-        console.log(`${this.bot1.name}: ${p1Choice}`);
-        console.log(`${this.bot2.name}: ${p2Choice}`);
-      }
-
-      // Execute turn
-      try {
-        this.battle.makeChoices(p1Choice, p2Choice);
-      } catch (error) {
-        console.error('Error making choices:', error.message);
-        console.error('P1:', p1Choice, 'P2:', p2Choice);
+    while (!this.battle.ended && this.battle.turn <= this.maxTurns) {
+      if (++steps > maxSteps) {
+        error = 'step limit exceeded';
         break;
       }
 
-      // Check for forced switches
-      if (this.battle.p1.active[0]?.fainted) {
-        const p1SwitchChoice = this.handleForcedSwitch(this.bot1, this.battle.p1, this.battle);
-        if (p1SwitchChoice && p1SwitchChoice !== 'default') {
-          if (this.verbose) console.log(`${this.bot1.name} forced switch: ${p1SwitchChoice}`);
-          this.battle.choose('p1', p1SwitchChoice);
-        }
+      const pending = this.battle.sides.filter(side => side.requestState);
+      if (pending.length === 0) {
+        error = 'no pending request';
+        break;
       }
 
-      if (this.battle.p2.active[0]?.fainted) {
-        const p2SwitchChoice = this.handleForcedSwitch(this.bot2, this.battle.p2, this.battle);
-        if (p2SwitchChoice && p2SwitchChoice !== 'default') {
-          if (this.verbose) console.log(`${this.bot2.name} forced switch: ${p2SwitchChoice}`);
-          this.battle.choose('p2', p2SwitchChoice);
+      if (this.verbose && this.battle.turn !== lastLoggedTurn) {
+        lastLoggedTurn = this.battle.turn;
+        console.log(`\n--- Turn ${this.battle.turn} ---`);
+        console.log(`${this.bot1.name}: ${this.describeActive(this.battle.p1)}`);
+        console.log(`${this.bot2.name}: ${this.describeActive(this.battle.p2)}`);
+      }
+
+      // Collect every choice before submitting, so both bots see the same state
+      const choices = pending.map(side => [side, this.getChoice(side, stats)]);
+
+      for (const [side, choice] of choices) {
+        if (this.verbose) console.log(`${this.botFor(side).name}: ${choice}`);
+        if (!this.battle.choose(side.id, choice)) {
+          stats.invalidChoices++;
+          if (this.verbose) console.log(`  invalid choice "${choice}", using default`);
+          this.battle.choose(side.id, 'default');
         }
       }
     }
+
+    const winner = this.getWinnerName();
 
     if (this.verbose) {
       console.log('\n' + '='.repeat(60));
       console.log('BATTLE END');
       console.log('='.repeat(60));
-      console.log(`Winner: ${this.battle.winner || 'Draw'}`);
-      console.log(`Total turns: ${turnCount}`);
+      console.log(`Winner: ${winner || 'Draw'}`);
+      console.log(`Total turns: ${this.battle.turn}`);
+      if (error) console.log(`Error: ${error}`);
     }
-
-    const winner = this.getWinnerName();
 
     return {
       winner,
-      turns: turnCount,
+      turns: this.battle.turn,
       ended: this.battle.ended,
+      error,
       bot1Name: this.bot1.name,
-      bot2Name: this.bot2.name
+      bot2Name: this.bot2.name,
+      ...stats
     };
   }
 
-  /**
-   * Get team preview choice
-   */
-  getTeamPreviewChoice(bot) {
-    // Most bots don't implement team preview
-    // Just return default
-    return 'default';
+  botFor(side) {
+    return side.id === 'p1' ? this.bot1 : this.bot2;
   }
 
-  /**
-   * Create request object for bot (mimics Showdown request format)
-   */
-  createRequest(side, battle) {
+  describeActive(side) {
     const active = side.active[0];
-
-    if (!active) {
-      return { active: [], side: { pokemon: [] } };
-    }
-
-    const request = {
-      active: [{
-        moves: active.moveSlots.map((move, idx) => ({
-          move: move.move?.name || move.id,
-          id: move.id,
-          pp: move.pp,
-          maxpp: move.maxpp,
-          target: move.target,
-          disabled: move.disabled || false
-        }))
-      }],
-      side: {
-        pokemon: side.pokemon.map(p => ({
-          ident: `${side.id}: ${p.name}`,
-          details: `${p.species.name}, L${p.level}`,
-          condition: p.fainted ? '0 fnt' : `${p.hp}/${p.maxhp}`,
-          active: p.isActive,
-          stats: p.baseStoredStats || {},
-          moves: p.moveSlots.map(m => m.id),
-          baseAbility: p.baseAbility,
-          item: p.item,
-          pokeball: 'pokeball',
-          ability: p.ability,
-          level: p.level,
-          hp: p.hp,
-          maxhp: p.maxhp,
-          status: p.status || '',
-          boosts: { ...p.boosts }
-        }))
-      },
-      forceSwitch: active.fainted ? [true] : undefined
-    };
-
-    return request;
+    return active ? `${active.name} (${active.hp}/${active.maxhp})` : 'none';
   }
 
   /**
-   * Handle forced switch
+   * Ask the bot for this side's choice. Team preview uses the default order.
    */
-  handleForcedSwitch(bot, side, battle) {
-    const request = this.createRequest(side, battle);
-    request.forceSwitch = [true];
+  getChoice(side, stats) {
+    if (side.requestState === 'teampreview') return 'default';
 
-    return bot.chooseMove(request);
+    const bot = this.botFor(side);
+    const start = performance.now();
+    let choice;
+    try {
+      choice = bot.chooseMove(this.createRequest(side));
+    } catch (err) {
+      stats.botErrors++;
+      if (this.verbose) console.log(`${bot.name} threw: ${err.message}`);
+      choice = 'default';
+    }
+    stats.decisionMs[side.id] += performance.now() - start;
+    stats.decisions[side.id]++;
+
+    return choice || 'default';
+  }
+
+  /**
+   * Build the request object passed to bots.
+   *
+   * This is the sim's real request (the same JSON a stream client receives),
+   * so it carries forceSwitch, trapped, disabled moves and choice locks. Each
+   * side.pokemon entry is also given level/hp/maxhp/status/boosts, which some
+   * bots read directly.
+   */
+  createRequest(side) {
+    const request = JSON.parse(JSON.stringify(side.activeRequest));
+    if (request.side && request.side.pokemon) {
+      request.side.pokemon.forEach((entry, i) => {
+        const pokemon = side.pokemon[i];
+        if (!pokemon) return;
+        entry.level = pokemon.level;
+        entry.hp = pokemon.hp;
+        entry.maxhp = pokemon.maxhp;
+        entry.status = pokemon.status || '';
+        entry.boosts = { ...pokemon.boosts };
+      });
+    }
+    return request;
   }
 
   /**
@@ -206,9 +184,9 @@ class EngineBattleSimulator {
   getWinnerName() {
     if (!this.battle.winner) return null;
 
-    if (this.battle.winner === this.battle.p1.name || this.battle.winner === 'P1') {
+    if (this.battle.winner === this.battle.p1.name) {
       return this.bot1.name;
-    } else if (this.battle.winner === this.battle.p2.name || this.battle.winner === 'P2') {
+    } else if (this.battle.winner === this.battle.p2.name) {
       return this.bot2.name;
     }
 

@@ -40,44 +40,38 @@ class TranspositionMoveSimulator {
   }
 
   /**
-   * Create better hash key for battle state
-   * Includes: turn, active Pokemon (species, HP, boosts, status), side conditions
+   * Hash key for a battle position.
+   *
+   * Deliberately excludes the turn number and search depth: the same position
+   * reached by different move orders (or on a later turn) should share an
+   * entry, and the entry's stored depth decides whether it is deep enough.
+   * Covers every Pokemon (HP in 5% buckets, status, item), active boosts and
+   * volatiles, pending requests, side conditions and field state.
    */
-  getBattleStateHash(battle, depth) {
+  getBattleStateHash(battle) {
     const start = performance.now();
 
-    const p1Active = battle.p1.active[0];
-    const p2Active = battle.p2.active[0];
-
-    if (!p1Active || !p2Active) {
-      this.stats.hashTime += performance.now() - start;
-      this.stats.hashCalls++;
-      return null;
+    const parts = [];
+    for (const side of battle.sides) {
+      parts.push(side.requestState || '-');
+      for (const p of side.pokemon) {
+        const hp = p.maxhp ? Math.ceil(p.hp / p.maxhp * 20) : 0;
+        parts.push(`${p.species.id}:${hp}:${p.status}:${p.item}${p.isActive ? '*' : ''}`);
+      }
+      const active = side.active[0];
+      if (active) {
+        parts.push(`b${this.boostsToString(active.boosts)}`);
+        parts.push(`v${Object.keys(active.volatiles).sort().join(',')}`);
+      }
+      parts.push(`sc${Object.entries(side.sideConditions)
+        .map(([id, data]) => id + (data.layers || ''))
+        .sort()
+        .join(',')}`);
     }
+    parts.push(`w${battle.field.weather}`, `t${battle.field.terrain}`,
+      `pw${Object.keys(battle.field.pseudoWeather).sort().join(',')}`);
 
-    // Create comprehensive hash
-    const hashParts = [
-      `t${battle.turn}`,
-      `d${depth}`,
-      // P1 active
-      `p1:${p1Active.species.id}`,
-      `hp${Math.floor(p1Active.hp / p1Active.maxhp * 20)}`, // HP in 5% buckets
-      `s${p1Active.status || 'none'}`,
-      `b${this.boostsToString(p1Active.boosts)}`,
-      // P2 active
-      `p2:${p2Active.species.id}`,
-      `hp${Math.floor(p2Active.hp / p2Active.maxhp * 20)}`,
-      `s${p2Active.status || 'none'}`,
-      `b${this.boostsToString(p2Active.boosts)}`,
-      // Side conditions
-      `sc1:${this.sideConditionsToString(battle.p1)}`,
-      `sc2:${this.sideConditionsToString(battle.p2)}`,
-      // Team health (alive count)
-      `a${battle.p1.pokemon.filter(p => p.hp > 0).length}`,
-      `a${battle.p2.pokemon.filter(p => p.hp > 0).length}`
-    ];
-
-    const hash = hashParts.join('|');
+    const hash = parts.join('|');
 
     this.stats.hashTime += performance.now() - start;
     this.stats.hashCalls++;
@@ -198,10 +192,8 @@ class TranspositionMoveSimulator {
   /**
    * Lookup position in transposition table
    */
-  ttLookup(battle, depth, player) {
-    const hash = this.getBattleStateHash(battle, depth);
-    if (!hash) return null;
-
+  ttLookup(battle) {
+    const hash = this.getBattleStateHash(battle);
     const entry = this.transpositionTable.get(hash);
     if (entry) {
       this.ttHits++;
@@ -216,8 +208,11 @@ class TranspositionMoveSimulator {
    * Store position in transposition table
    */
   ttStore(battle, depth, player, score, flag = 'exact') {
-    const hash = this.getBattleStateHash(battle, depth);
-    if (!hash) return;
+    const hash = this.getBattleStateHash(battle);
+
+    // Keep a deeper result over a shallower one for the same position
+    const existing = this.transpositionTable.get(hash);
+    if (existing && existing.depth > depth) return;
 
     // LRU eviction if table is full
     if (this.transpositionTable.size >= this.maxTableSize) {
@@ -265,6 +260,7 @@ class TranspositionMoveSimulator {
 
     const serializeStart = performance.now();
     const serialized = battle.toJSON();
+    serialized.log = []; // toJSON shares the live log array; see cloneBattle.js
     this.stats.jsonSerializeTime += performance.now() - serializeStart;
 
     const deserializeStart = performance.now();
@@ -317,8 +313,120 @@ class TranspositionMoveSimulator {
 
     return side.pokemon
       .map((p, idx) => ({ pokemon: p, slot: idx + 1 }))
-      .filter(({ pokemon }) => !pokemon.active && pokemon.hp > 0)
+      .filter(({ pokemon }) => !pokemon.isActive && pokemon.hp > 0)
       .map(({ slot }) => slot);
+  }
+
+  /**
+   * Legal choices for a player in this position, read from the sim's own
+   * pending request so disabled moves, choice locks, trapping and forced
+   * switches (faints, U-turn) are respected.
+   *
+   * Returns [] when the player has no pending request (waiting on the other
+   * side). Each choice is { choice, kind: 'move'|'switch'|'default', id?, slot? }.
+   *
+   * @param {Object} options
+   * @param {boolean} options.includeSwitches - add voluntary switches to a move request
+   * @param {number} options.maxSwitches - cap on voluntary switches, best matchups first
+   */
+  getChoices(battle, player, options = {}) {
+    const side = battle[player];
+    const state = side.requestState;
+    const request = side.activeRequest;
+    if (!state || !request) return [];
+    if (state === 'teampreview') return [{ choice: 'default', kind: 'default' }];
+
+    const choices = [];
+    const active = request.active && request.active[0];
+
+    if (state === 'move' && active) {
+      active.moves.forEach((move, i) => {
+        if (!move.disabled) {
+          choices.push({ choice: `move ${i + 1}`, kind: 'move', id: move.id });
+        }
+      });
+    }
+
+    const forced = state === 'switch';
+    const voluntary = state === 'move' && options.includeSwitches && active && !active.trapped;
+    if (forced || voluntary) {
+      let switches = [];
+      request.side.pokemon.forEach((entry, i) => {
+        if (!entry.active && !entry.condition.endsWith(' fnt')) {
+          switches.push({ choice: `switch ${i + 1}`, kind: 'switch', slot: i + 1 });
+        }
+      });
+      if (voluntary) {
+        switches = this.orderSwitches(battle, player, switches);
+        if (options.maxSwitches !== undefined) switches = switches.slice(0, options.maxSwitches);
+      }
+      choices.push(...switches);
+    }
+
+    if (choices.length === 0) choices.push({ choice: 'default', kind: 'default' });
+    return choices;
+  }
+
+  /**
+   * Order switch choices by how well each candidate takes hits from the
+   * opposing active Pokemon's types, with remaining HP as a tiebreaker.
+   */
+  orderSwitches(battle, player, switches) {
+    const side = battle[player];
+    const opponent = battle[player === 'p1' ? 'p2' : 'p1'].active[0];
+    if (!opponent || opponent.fainted) return switches;
+    const attackTypes = opponent.getTypes();
+
+    const scored = switches.map(sw => {
+      const candidate = side.pokemon[sw.slot - 1];
+      let score = candidate.hp / candidate.maxhp * 10;
+      for (const type of attackTypes) {
+        if (!battle.dex.getImmunity(type, candidate)) {
+          score += 20;
+        } else {
+          // getEffectiveness is log2 of the multiplier: -1 resist, +1 weak
+          score -= battle.dex.getEffectiveness(type, candidate) * 10;
+        }
+      }
+      return { sw, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map(s => s.sw);
+  }
+
+  /**
+   * Clone the battle and submit the given choice strings for every side with a
+   * pending request (null means "no choice", used for a waiting side). The sim
+   * commits once all pending sides have chosen. An illegal choice falls back to
+   * 'default' rather than leaving the clone stuck mid-request.
+   */
+  applyChoices(battle, p1Choice, p2Choice) {
+    const start = performance.now();
+    const cloned = this.cloneBattle(battle);
+
+    // Record pending sides before choosing: the last choice commits the turn
+    // and creates new requests, which must not receive this turn's choices.
+    const pending = [['p1', p1Choice], ['p2', p2Choice]]
+      .filter(([id]) => cloned[id].requestState);
+
+    const chooseStart = performance.now();
+    let ok = true;
+    try {
+      for (const [id, choice] of pending) {
+        if (!cloned.choose(id, choice || 'default')) {
+          cloned.choose(id, 'default');
+        }
+      }
+    } catch (error) {
+      // The sim threw while resolving the turn; the caller skips this branch
+      ok = false;
+    }
+    this.stats.makeChoicesTime += performance.now() - chooseStart;
+    this.stats.makeChoicesCalls++;
+
+    this.stats.simulateTime += performance.now() - start;
+    this.stats.simulateCalls++;
+    return ok ? cloned : null;
   }
 
   extractState(battle, perspective = 'p1') {
@@ -544,12 +652,9 @@ class TranspositionMoveSimulator {
       this.stats.evaluateTime += performance.now() - start;
       this.stats.evaluateCalls++;
 
-      if (state.winner === (player === 'p1' ? 'P1' : 'P2')) {
-        return 10000;
-      } else if (state.winner) {
-        return -10000;
-      }
-      return 0;
+      // battle.winner is the winning player's name ('' for a tie), not 'P1'/'P2'
+      if (!state.winner) return 0;
+      return state.winner === battle[player].name ? 10000 : -10000;
     }
 
     let score = 0;

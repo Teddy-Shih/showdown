@@ -36,6 +36,7 @@ class ProfiledEngineMoveSimulator {
 
     const serializeStart = performance.now();
     const serialized = battle.toJSON();
+    serialized.log = []; // toJSON shares the live log array; see cloneBattle.js
     this.stats.jsonSerializeTime += performance.now() - serializeStart;
 
     const deserializeStart = performance.now();

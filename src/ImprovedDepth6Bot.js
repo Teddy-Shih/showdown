@@ -1,41 +1,24 @@
 const Depth6SearchBot = require('./Depth6SearchBot');
 
 /**
- * ImprovedDepth6Bot - Enhanced Depth6SearchBot with time-bounded search and opponent move prediction
+ * ImprovedDepth6Bot - Depth6SearchBot with an opponent model.
  *
- * Key Improvements:
- * 1. Time-bounded search: Stops searching when time limit is reached, returns best move found so far
- * 2. Opponent move prediction: Uses heuristics to predict likely opponent moves instead of pure minimax
+ * The time-bounded, iteratively deepened search lives in OptimizedDepth4Bot.
+ * This class orders the opponent's replies in that search by predicted
+ * likelihood: a heuristic score (damage, setup, status, recovery) plus a bonus
+ * for moves the opponent has actually been seen using.
  *
- * Time-Bounded Search:
- * - Default time limit: 3000ms (3 seconds) per move
- * - Checks time at each node to avoid timeout
- * - Returns best move found so far if time runs out
- * - Allows for iterative deepening in the future
- *
- * Opponent Move Prediction:
- * - Scores opponent moves by expected utility (damage, setup value, etc.)
- * - Focuses search on most likely opponent responses
- * - Reduces branching factor by considering top N opponent moves
- * - Falls back to minimax for edge cases
- *
- * Expected Benefits:
- * - More consistent move times (avoids timeouts)
- * - Better performance against predictable opponents
- * - More nodes explored in same time (via better pruning)
+ * Ordering alone never changes the search result, only how fast alpha-beta
+ * prunes. Setting opponentMovesConsider trims the opponent to its top N
+ * predicted moves, which is faster but optimistic if the model is wrong.
  */
 class ImprovedDepth6Bot extends Depth6SearchBot {
   constructor(playerName, options = {}) {
     super(playerName, options);
 
-    // Time-bounded search settings
-    this.timeLimit = options.timeLimit || 4000; // 4 seconds default
-    this.searchStartTime = 0;
-    this.timeoutReached = false;
-
     // Opponent prediction settings
     this.useOpponentPrediction = options.useOpponentPrediction !== false;
-    this.opponentMovesConsider = options.opponentMovesConsider || 3; // Consider top 3 opponent moves
+    this.opponentMovesConsider = options.opponentMovesConsider || Infinity;
 
     // Opponent move history: species -> { moveId -> usageCount }
     // Tracks which moves each opponent Pokemon has actually used
@@ -50,7 +33,6 @@ class ImprovedDepth6Bot extends Depth6SearchBot {
 
     // Additional stats
     this.improvedStats = {
-      timeouts: 0,
       opponentPredictions: 0,
       predictionAccuracy: [],
       historyHits: 0
@@ -106,10 +88,6 @@ class ImprovedDepth6Bot extends Depth6SearchBot {
   }
 
   chooseMove(request) {
-    // Reset timeout flag at start of search
-    this.timeoutReached = false;
-    this.searchStartTime = performance.now();
-
     // Update opponent model from current battle state (works with EngineBattleSimulator)
     this._updateOpponentModelFromBattle();
 
@@ -165,19 +143,23 @@ class ImprovedDepth6Bot extends Depth6SearchBot {
   }
 
   /**
-   * Check if we've exceeded the time limit
+   * Order the opponent's replies by predicted likelihood (see
+   * predictOpponentMoves); switches follow moves.
    */
-  isTimeoutReached() {
-    if (this.timeoutReached) return true;
-
-    const elapsed = performance.now() - this.searchStartTime;
-    if (elapsed > this.timeLimit) {
-      this.timeoutReached = true;
-      this.improvedStats.timeouts++;
-      return true;
+  orderOpponentChoices(battle, player, choices) {
+    if (!this.useOpponentPrediction) {
+      return super.orderOpponentChoices(battle, player, choices);
     }
 
-    return false;
+    const moveChoices = choices.filter(c => c.kind === 'move');
+    const rank = new Map(this.predictOpponentMoves(battle, player).map((id, i) => [id, i]));
+    const rankOf = c => (rank.has(c.id) ? rank.get(c.id) : Infinity);
+    moveChoices.sort((a, b) => rankOf(a) - rankOf(b));
+
+    return [
+      ...moveChoices.slice(0, this.opponentMovesConsider),
+      ...choices.filter(c => c.kind !== 'move')
+    ];
   }
 
   /**
@@ -317,197 +299,10 @@ class ImprovedDepth6Bot extends Depth6SearchBot {
     return scoredMoves.map(m => m.moveId);
   }
 
-  minimax(battle, lastChoice, depth, alpha, beta, maximizing) {
-    // Check timeout
-    if (this.isTimeoutReached()) {
-      // Return current evaluation if timeout
-      return this.simulator.evaluateState(battle, this.playerSide);
-    }
-
-    // Check transposition table first
-    if (this.useTranspositionTable && depth > 0) {
-      const ttEntry = this.simulator.ttLookup(battle, depth, this.playerSide);
-      if (ttEntry) {
-        if (ttEntry.depth >= depth) {
-          if (ttEntry.flag === 'exact') {
-            this.searchStats.ttCutoffs++;
-            return ttEntry.score;
-          } else if (ttEntry.flag === 'lowerbound') {
-            alpha = Math.max(alpha, ttEntry.score);
-          } else if (ttEntry.flag === 'upperbound') {
-            beta = Math.min(beta, ttEntry.score);
-          }
-
-          if (alpha >= beta) {
-            this.searchStats.ttCutoffs++;
-            return ttEntry.score;
-          }
-        }
-      }
-    }
-
-    // Terminal conditions
-    if (depth === 0 || battle.ended) {
-      this.nodesThisPath++;
-      const score = this.simulator.evaluateState(battle, this.playerSide);
-
-      if (this.useTranspositionTable && depth > 0) {
-        this.simulator.ttStore(battle, depth, this.playerSide, score, 'exact');
-      }
-
-      return score;
-    }
-
-    const currentPlayer = maximizing ? this.playerSide : (this.playerSide === 'p1' ? 'p2' : 'p1');
-    const oppPlayer = maximizing ? (this.playerSide === 'p1' ? 'p2' : 'p1') : this.playerSide;
-
-    let ourMoves = this.simulator.getAvailableMoves(battle, currentPlayer);
-    let oppMoves = this.simulator.getAvailableMoves(battle, oppPlayer);
-
-    if (ourMoves.length === 0 || oppMoves.length === 0) {
-      this.nodesThisPath++;
-      return this.simulator.evaluateState(battle, this.playerSide);
-    }
-
-    // Apply move ordering for our moves
-    if (this.useMoveOrdering) {
-      ourMoves = this.simulator.orderMoves(battle, currentPlayer, ourMoves);
-    }
-
-    // Use opponent prediction for opponent moves
-    if (this.useOpponentPrediction && oppPlayer !== this.playerSide) {
-      oppMoves = this.predictOpponentMoves(battle, oppPlayer);
-    } else if (this.useMoveOrdering) {
-      oppMoves = this.simulator.orderMoves(battle, oppPlayer, oppMoves);
-    }
-
-    const movesToTry = Math.min(ourMoves.length, this.maxMovesToConsider);
-    const oppMovesToTry = Math.min(
-      oppMoves.length,
-      oppPlayer === this.playerSide ? this.maxMovesToConsider : this.opponentMovesConsider
-    );
-
-    let scoreFlag = 'upperbound';
-
-    if (maximizing) {
-      let maxScore = -Infinity;
-
-      for (let i = 0; i < movesToTry; i++) {
-        if (this.isTimeoutReached()) break;
-
-        const ourMoveId = ourMoves[i];
-        const ourSlot = battle[currentPlayer].active[0].moveSlots.findIndex(s => s.id === ourMoveId);
-        if (ourSlot === -1) continue;
-        const ourChoice = `move ${ourSlot + 1}`;
-
-        for (let j = 0; j < oppMovesToTry; j++) {
-          if (this.isTimeoutReached()) break;
-
-          const oppMoveId = oppMoves[j];
-          const oppSlot = battle[oppPlayer].active[0].moveSlots.findIndex(s => s.id === oppMoveId);
-          if (oppSlot === -1) continue;
-          const oppChoice = `move ${oppSlot + 1}`;
-
-          const p1Choice = currentPlayer === 'p1' ? ourChoice : oppChoice;
-          const p2Choice = currentPlayer === 'p1' ? oppChoice : ourChoice;
-
-          try {
-            const newBattle = this.simulator.simulateTurn(battle, p1Choice, p2Choice);
-            this.nodesThisPath++;
-
-            const score = this.minimax(newBattle, oppChoice, depth - 1, alpha, beta, false);
-            maxScore = Math.max(maxScore, score);
-
-            if (maxScore > alpha) {
-              alpha = maxScore;
-              scoreFlag = 'exact';
-            }
-
-            if (beta <= alpha) {
-              this.searchStats.alphaBetaPrunes++;
-              scoreFlag = 'lowerbound';
-
-              if (this.useTranspositionTable) {
-                this.simulator.ttStore(battle, depth, this.playerSide, maxScore, scoreFlag);
-              }
-
-              return maxScore;
-            }
-          } catch (error) {
-            maxScore = Math.max(maxScore, -1000);
-          }
-        }
-      }
-
-      if (this.useTranspositionTable) {
-        this.simulator.ttStore(battle, depth, this.playerSide, maxScore, scoreFlag);
-      }
-
-      return maxScore;
-    } else {
-      let minScore = Infinity;
-
-      for (let i = 0; i < movesToTry; i++) {
-        if (this.isTimeoutReached()) break;
-
-        const ourMoveId = ourMoves[i];
-        const ourSlot = battle[currentPlayer].active[0].moveSlots.findIndex(s => s.id === ourMoveId);
-        if (ourSlot === -1) continue;
-        const ourChoice = `move ${ourSlot + 1}`;
-
-        for (let j = 0; j < oppMovesToTry; j++) {
-          if (this.isTimeoutReached()) break;
-
-          const oppMoveId = oppMoves[j];
-          const oppSlot = battle[oppPlayer].active[0].moveSlots.findIndex(s => s.id === oppMoveId);
-          if (oppSlot === -1) continue;
-          const oppChoice = `move ${oppSlot + 1}`;
-
-          const p1Choice = currentPlayer === 'p1' ? ourChoice : oppChoice;
-          const p2Choice = currentPlayer === 'p1' ? oppChoice : ourChoice;
-
-          try {
-            const newBattle = this.simulator.simulateTurn(battle, p1Choice, p2Choice);
-            this.nodesThisPath++;
-
-            const score = this.minimax(newBattle, oppChoice, depth - 1, alpha, beta, true);
-            minScore = Math.min(minScore, score);
-
-            if (minScore < beta) {
-              beta = minScore;
-              scoreFlag = 'exact';
-            }
-
-            if (beta <= alpha) {
-              this.searchStats.alphaBetaPrunes++;
-              scoreFlag = 'upperbound';
-
-              if (this.useTranspositionTable) {
-                this.simulator.ttStore(battle, depth, this.playerSide, minScore, scoreFlag);
-              }
-
-              return minScore;
-            }
-          } catch (error) {
-            minScore = Math.min(minScore, 1000);
-          }
-        }
-      }
-
-      if (this.useTranspositionTable) {
-        this.simulator.ttStore(battle, depth, this.playerSide, minScore, scoreFlag);
-      }
-
-      return minScore;
-    }
-  }
-
   printStats() {
     super.printStats();
 
-    console.log('\nImproved Bot Features:');
-    console.log(`  Time limit:             ${this.timeLimit}ms`);
-    console.log(`  Timeouts reached:       ${this.improvedStats.timeouts}`);
+    console.log('\nOpponent Model:');
     console.log(`  Opponent prediction:    ${this.useOpponentPrediction ? 'YES' : 'NO'}`);
     console.log(`  Opponent moves considered: ${this.opponentMovesConsider}`);
     console.log(`  Prediction calls:       ${this.improvedStats.opponentPredictions}`);

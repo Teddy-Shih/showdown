@@ -31,6 +31,7 @@ class CachedEngineMoveSimulator {
 
   cloneBattle(battle) {
     const serialized = battle.toJSON();
+    serialized.log = []; // toJSON shares the live log array; see cloneBattle.js
     return Battle.fromJSON(serialized);
   }
 
